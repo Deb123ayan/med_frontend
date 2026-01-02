@@ -20,8 +20,8 @@ export const healthRecords = pgTable("health_records", {
   clinicalData: jsonb("clinical_data").notNull().$type<Record<string, number>>(),
   // Time-series metadata or reference (e.g., ECG signal points)
   ecgData: jsonb("ecg_data").$type<number[]>(),
-  // Image URL or placeholder
-  imageUrl: text("image_url"),
+  // Image metadata
+  imageMetadata: jsonb("image_metadata").$type<{url: string, type: string, findings?: string}>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -32,9 +32,11 @@ export const predictions = pgTable("predictions", {
   riskScore: doublePrecision("risk_score").notNull(), // 0-100
   riskCategory: text("risk_category").notNull(), // 'Low', 'Medium', 'High'
   confidence: doublePrecision("confidence").notNull(), // 0-1
+  uncertainty: doublePrecision("uncertainty").notNull(), // Monte Carlo Dropout / Ensemble variance
   // Explainability data
-  topFeatures: jsonb("top_features").notNull().$type<Array<{feature: string, value: number, importance: number}>>(),
-  biasAnalysis: jsonb("bias_analysis").$type<{genderBias: number, ageBias: number}>(),
+  topFeatures: jsonb("top_features").notNull().$type<Array<{feature: string, value: number, importance: number, contribution: "positive" | "negative"}>>(),
+  biasAnalysis: jsonb("bias_analysis").$type<{genderBias: number, ageBias: number, fairnessWarning?: string}>(),
+  causalCounterfactuals: jsonb("causal_counterfactuals").$type<Array<{feature: string, originalValue: number, suggestedValue: number, impactOnRisk: number}>>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -57,8 +59,8 @@ export type InsertPrediction = z.infer<typeof insertPredictionSchema>;
 
 // API Request/Response Types
 export type PredictionRequest = {
-  patientId?: number; // Optional if new patient
-  patientData?: InsertPatient; // If creating new patient on fly
+  patientId?: number;
+  patientData?: InsertPatient;
   clinicalData: Record<string, number>;
   ecgData?: number[];
   imageUrl?: string;
@@ -67,7 +69,7 @@ export type PredictionRequest = {
 
 export type CounterfactualRequest = {
   predictionId: number;
-  changes: Record<string, number>; // e.g. { "glucose": 90 }
+  changes: Record<string, number>;
 };
 
 export type PredictionResponse = Prediction & {

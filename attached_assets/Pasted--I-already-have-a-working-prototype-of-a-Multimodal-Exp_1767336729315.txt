@@ -1,0 +1,255 @@
+
+I already have a **working prototype** of a Multimodal Explainable AI Disease Prediction System built in **Node.js/TypeScript + React**, deployed via Replit.
+
+Current state:
+
+* Backend uses **Express (Node.js)** with simulated ML logic
+* Frontend dashboard works (forms, charts, counterfactual UI)
+* Database schemas for patients & predictions exist
+* APIs for prediction, explanation, and counterfactuals exist
+
+⚠️ HOWEVER, this is **still a prototype** and **does NOT yet meet clinical-grade AI system standards**.
+
+Your task is to **identify, fix, and complete what is missing**.
+
+---
+
+## 🔹 YOUR ROLE
+
+Act as a **Senior AI Architect + Healthcare ML Engineer + MLOps Engineer**.
+
+You must:
+
+* Be critical
+* Think like a reviewer in a **healthcare AI interview / research lab**
+* Treat this as a **production-bound Clinical Decision Support System**
+
+---
+
+## 🔹 PRIMARY OBJECTIVE
+
+Upgrade the existing system from a **simulated ML dashboard** into a **real Multimodal Explainable AI system**, while **keeping Node.js as the orchestration layer** if needed.
+
+You may:
+
+* Add a **Python ML microservice** if required
+* Keep Node.js as API gateway
+* Improve correctness, explainability, uncertainty handling, and ethics
+
+---
+
+## 🔹 WHAT IS CURRENTLY MISSING (YOU MUST ADDRESS ALL)
+
+### 1️⃣ REAL MACHINE LEARNING (CRITICAL)
+
+❌ Current system simulates predictions
+✅ REQUIRED:
+
+* Implement **real ML models**, not mock logic:
+
+  * Heart Disease: Logistic Regression / RandomForest / XGBoost
+  * Diabetes: RandomForest / XGBoost
+* Load trained models from disk
+* Clearly separate:
+
+  * Training
+  * Inference
+  * Evaluation
+
+👉 If Node.js cannot handle this properly:
+
+* Introduce a **Python FastAPI ML microservice**
+* Node.js should call it via HTTP
+
+---
+
+### 2️⃣ MULTIMODAL PIPELINE (INCOMPLETE)
+
+Current system is **tabular-only in reality**.
+
+You must add:
+
+* Time-series pipeline (LSTM-ready)
+
+  * Heart rate / ECG placeholder with correct tensor shapes
+* Image pipeline (CNN placeholder)
+
+  * Accept image input
+  * Return embedding or dummy heatmap (for now)
+
+Also:
+
+* Implement a **fusion layer**
+
+  * Combine tabular + time-series + image outputs
+  * Weighted or learned fusion
+
+---
+
+### 3️⃣ EXPLAINABILITY IS TOO SHALLOW
+
+Current explanations are **UI-level only**.
+
+You must:
+
+* Add **true feature attribution**
+
+  * SHAP (preferred) or permutation importance
+* Return:
+
+  * Local explanation (per patient)
+  * Global explanation (per disease)
+* Explain results in **clinician-friendly language**
+
+---
+
+### 4️⃣ COUNTERFACTUALS ARE NOT CAUSAL
+
+Current “what-if” logic is rule-based.
+
+You must:
+
+* Implement **counterfactual reasoning**
+
+  * Minimal feature change
+  * Clinically realistic constraints
+* Example:
+
+  * BP cannot drop 40 points instantly
+  * BMI change affects glucose indirectly
+
+---
+
+### 5️⃣ UNCERTAINTY & CONFIDENCE (MISSING)
+
+You must add:
+
+* Uncertainty estimation via:
+
+  * Ensemble variance OR
+  * Monte Carlo Dropout
+* Return:
+
+  * Prediction confidence
+  * Warning when confidence is low
+
+---
+
+### 6️⃣ BIAS & FAIRNESS CHECKS (WEAK)
+
+Current bias report is cosmetic.
+
+You must:
+
+* Compute bias metrics:
+
+  * By age group
+  * By gender
+* Add:
+
+  * Fairness warning if disparity detected
+* Document ethical implications
+
+---
+
+### 7️⃣ MEDICAL & LEGAL SAFETY
+
+You must:
+
+* Add **medical disclaimers everywhere**
+* Add:
+
+  * “Not for diagnosis”
+  * “For clinical decision support only”
+* Ensure:
+
+  * No deterministic language
+  * No absolute claims
+
+---
+
+### 8️⃣ ARCHITECTURE HARDENING
+
+You must:
+
+* Clearly document:
+
+  * Why Node.js is used
+  * Where ML actually lives
+* Enforce:
+
+  * Backend–frontend separation
+  * ML service isolation
+* Add:
+
+  * Environment configs
+  * Proper error handling
+  * Versioned APIs
+
+---
+
+## 🔹 DELIVERABLES (MANDATORY)
+
+When responding, you MUST provide:
+
+1. **Gap Analysis Table**
+
+   * Feature
+   * Current State
+   * Required Fix
+   * Final State
+
+2. **Revised Architecture Diagram (Textual)**
+
+   * Frontend
+   * API Gateway
+   * ML Service
+   * Database
+
+3. **Concrete Implementation Plan**
+
+   * Step-by-step upgrade path
+   * Minimal breaking changes
+
+4. **Example API Payloads**
+
+   * Prediction
+   * Explanation
+   * Counterfactual
+   * Bias report
+
+5. **Interview-Ready Justification**
+
+   * Why this design
+   * Why this is clinically realistic
+   * How it scales
+
+---
+
+## 🔹 FINAL DIRECTIVE (NON-NEGOTIABLE)
+
+This system must evolve into:
+
+> 🏥 **An AI-assisted Clinical Decision Support System**
+> suitable for:
+>
+> * Research discussions
+> * Healthcare AI interviews
+> * Advanced ML portfolios
+
+🚫 It must NOT remain:
+
+* A simulated ML app
+* A UI-heavy demo
+* A fake explainability dashboard
+
+---
+
+### ✅ OPTIONAL (HIGH IMPACT)
+
+If possible, also suggest:
+
+* Federated learning simulation
+* Digital patient twin
+* Continuous learning loop
+* Audit logging for predictions
