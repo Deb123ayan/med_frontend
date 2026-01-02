@@ -1,0 +1,118 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api, buildUrl } from "@shared/routes";
+import { z } from "zod";
+
+// ============================================
+// PATIENTS HOOKS
+// ============================================
+
+export function usePatients() {
+  return useQuery({
+    queryKey: [api.patients.list.path],
+    queryFn: async () => {
+      const res = await fetch(api.patients.list.path, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch patients");
+      return api.patients.list.responses[200].parse(await res.json());
+    },
+  });
+}
+
+export function usePatient(id: number) {
+  return useQuery({
+    queryKey: [api.patients.get.path, id],
+    queryFn: async () => {
+      const url = buildUrl(api.patients.get.path, { id });
+      const res = await fetch(url, { credentials: "include" });
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error("Failed to fetch patient");
+      return api.patients.get.responses[200].parse(await res.json());
+    },
+    enabled: !!id,
+  });
+}
+
+export function useCreatePatient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: z.infer<typeof api.patients.create.input>) => {
+      const res = await fetch(api.patients.create.path, {
+        method: api.patients.create.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to create patient");
+      return api.patients.create.responses[201].parse(await res.json());
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.patients.list.path] }),
+  });
+}
+
+// ============================================
+// PREDICTION HOOKS
+// ============================================
+
+export function usePredictions() {
+  return useQuery({
+    queryKey: [api.predictions.list.path],
+    queryFn: async () => {
+      const res = await fetch(api.predictions.list.path, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch predictions");
+      return api.predictions.list.responses[200].parse(await res.json());
+    },
+  });
+}
+
+export function usePrediction(id: number) {
+  return useQuery({
+    queryKey: [api.predictions.get.path, id],
+    queryFn: async () => {
+      const url = buildUrl(api.predictions.get.path, { id });
+      const res = await fetch(url, { credentials: "include" });
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error("Failed to fetch prediction");
+      return api.predictions.get.responses[200].parse(await res.json());
+    },
+    enabled: !!id,
+  });
+}
+
+export function useCreatePrediction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: z.infer<typeof api.predictions.predict.input>) => {
+      const res = await fetch(api.predictions.predict.path, {
+        method: api.predictions.predict.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      
+      if (!res.ok) {
+        if (res.status === 400) {
+           const error = api.predictions.predict.responses[400].parse(await res.json());
+           throw new Error(error.message);
+        }
+        throw new Error("Failed to generate prediction");
+      }
+      return api.predictions.predict.responses[201].parse(await res.json());
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.predictions.list.path] }),
+  });
+}
+
+export function useCounterfactual() {
+  return useMutation({
+    mutationFn: async ({ id, changes }: { id: number, changes: Record<string, number> }) => {
+      const url = buildUrl(api.predictions.counterfactual.path, { id });
+      const res = await fetch(url, {
+        method: api.predictions.counterfactual.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ changes }),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to simulate counterfactual");
+      return api.predictions.counterfactual.responses[200].parse(await res.json());
+    },
+  });
+}

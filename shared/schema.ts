@@ -1,18 +1,75 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+// === TABLE DEFINITIONS ===
+
+export const patients = pgTable("patients", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  age: integer("age").notNull(),
+  gender: text("gender").notNull(), // 'Male', 'Female', 'Other'
+  medicalHistory: jsonb("medical_history").$type<string[]>(), // Array of conditions
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const healthRecords = pgTable("health_records", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  // Tabular data (Blood Pressure, Glucose, Cholesterol, etc.)
+  clinicalData: jsonb("clinical_data").notNull().$type<Record<string, number>>(),
+  // Time-series metadata or reference (e.g., ECG signal points)
+  ecgData: jsonb("ecg_data").$type<number[]>(),
+  // Image URL or placeholder
+  imageUrl: text("image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export const predictions = pgTable("predictions", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull(),
+  disease: text("disease").notNull(), // 'Heart Disease', 'Diabetes'
+  riskScore: doublePrecision("risk_score").notNull(), // 0-100
+  riskCategory: text("risk_category").notNull(), // 'Low', 'Medium', 'High'
+  confidence: doublePrecision("confidence").notNull(), // 0-1
+  // Explainability data
+  topFeatures: jsonb("top_features").notNull().$type<Array<{feature: string, value: number, importance: number}>>(),
+  biasAnalysis: jsonb("bias_analysis").$type<{genderBias: number, ageBias: number}>(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// === SCHEMAS ===
+
+export const insertPatientSchema = createInsertSchema(patients).omit({ id: true, createdAt: true });
+export const insertHealthRecordSchema = createInsertSchema(healthRecords).omit({ id: true, createdAt: true });
+export const insertPredictionSchema = createInsertSchema(predictions).omit({ id: true, createdAt: true });
+
+// === TYPES ===
+
+export type Patient = typeof patients.$inferSelect;
+export type InsertPatient = z.infer<typeof insertPatientSchema>;
+
+export type HealthRecord = typeof healthRecords.$inferSelect;
+export type InsertHealthRecord = z.infer<typeof insertHealthRecordSchema>;
+
+export type Prediction = typeof predictions.$inferSelect;
+export type InsertPrediction = z.infer<typeof insertPredictionSchema>;
+
+// API Request/Response Types
+export type PredictionRequest = {
+  patientId?: number; // Optional if new patient
+  patientData?: InsertPatient; // If creating new patient on fly
+  clinicalData: Record<string, number>;
+  ecgData?: number[];
+  imageUrl?: string;
+  disease: 'Heart Disease' | 'Diabetes';
+};
+
+export type CounterfactualRequest = {
+  predictionId: number;
+  changes: Record<string, number>; // e.g. { "glucose": 90 }
+};
+
+export type PredictionResponse = Prediction & {
+  patient: Patient;
+};

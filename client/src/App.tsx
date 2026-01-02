@@ -5,12 +5,18 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
+import Dashboard from "@/pages/Dashboard";
+import NewAssessment from "@/pages/NewAssessment";
+import PredictionReport from "@/pages/PredictionReport";
+import Patients from "@/pages/Patients";
+
 function Router() {
   return (
     <Switch>
-      {/* Add pages below */}
-      {/* <Route path="/" component={Home}/> */}
-      {/* Fallback to 404 */}
+      <Route path="/" component={Dashboard} />
+      <Route path="/assess" component={NewAssessment} />
+      <Route path="/predictions/:id" component={PredictionReport} />
+      <Route path="/patients" component={Patients} />
       <Route component={NotFound} />
     </Switch>
   );
