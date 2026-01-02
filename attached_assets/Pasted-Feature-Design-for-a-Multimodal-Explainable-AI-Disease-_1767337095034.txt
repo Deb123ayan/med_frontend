@@ -1,0 +1,245 @@
+Feature Design for a Multimodal Explainable AI Disease Prediction System
+🔹 ROLE
+
+You are a Senior AI Product Architect + Healthcare ML Expert + Clinical Decision Support Designer.
+
+You think like:
+
+A healthcare AI reviewer
+
+A medical AI startup architect
+
+A research-grade system designer
+
+You do NOT jump to backend, models, or code unless explicitly asked.
+
+🔹 CONTEXT
+
+I already have a working prototype (Node.js + React) with:
+
+Patient forms
+
+Risk dashboard
+
+Counterfactual UI
+
+Simulated predictions
+
+⚠️ This system is still a prototype, not a clinical-grade AI system.
+
+Your job is to define the COMPLETE feature set required to transform it into a real AI-assisted Clinical Decision Support System (CDSS).
+
+🔹 PRIMARY OBJECTIVE
+
+Design a feature-complete AI system that:
+
+Predicts early disease risk
+
+Uses multimodal health data
+
+Is explainable, uncertainty-aware, and ethically safe
+
+Feels suitable for:
+
+Healthcare AI interviews
+
+Research discussions
+
+Advanced ML portfolios
+
+🚫 Do NOT design a toy app
+🚫 Do NOT assume diagnosis or treatment authority
+
+🔹 DISEASE SCOPE
+
+Start with:
+
+Heart Disease
+
+Diabetes
+
+The feature design must scale to other diseases later.
+
+🔹 FEATURE DESIGN REQUIREMENTS (MANDATORY)
+1️⃣ Core Risk Prediction
+
+Define features for:
+
+Disease risk probability (%)
+
+Risk categories (Low / Medium / High)
+
+Confidence indicator
+
+Explain:
+
+Why these outputs matter clinically
+
+How doctors interpret them
+
+2️⃣ Multimodal Patient Data Intake
+
+Design features for accepting:
+
+Tabular data (vitals, labs)
+
+Time-series data (heart rate / ECG)
+
+Medical images (X-ray placeholder)
+
+Focus on:
+
+UX clarity
+
+Clinical realism
+
+Logical grouping of inputs
+
+3️⃣ Explainability & Trust
+
+Design features for:
+
+Patient-level explanation (local)
+
+Population-level explanation (global)
+
+Feature contribution ranking
+
+Explain how:
+
+A clinician would interpret explanations
+
+Trust is built without oversimplification
+
+4️⃣ Counterfactual & “What-If” Analysis
+
+Design features that:
+
+Allow users to simulate changes (BP, glucose, BMI)
+
+Enforce clinically realistic constraints
+
+Show impact on risk
+
+Avoid:
+
+Unrealistic instant changes
+
+Prescription-like suggestions
+
+5️⃣ Uncertainty & Reliability
+
+Design features for:
+
+Prediction confidence levels
+
+Uncertainty warnings
+
+Data quality alerts
+
+Explain:
+
+When the system should not be trusted fully
+
+6️⃣ Bias, Fairness & Ethics
+
+Design features for:
+
+Bias reporting by age and gender
+
+Fairness alerts
+
+Ethical transparency
+
+Include:
+
+What the system should say when bias is detected
+
+7️⃣ Clinical Workflow Support
+
+Design features for:
+
+Patient risk history timeline
+
+Risk trend visualization
+
+Comparison of past vs current risk
+
+Focus on:
+
+Long-term disease monitoring
+
+8️⃣ Safety & Legal Guardrails
+
+Design features that ensure:
+
+Clear medical disclaimers
+
+No deterministic or diagnostic language
+
+AI is positioned as decision support only
+
+Explicitly define:
+
+What the system must NEVER claim
+
+🔹 OPTIONAL HIGH-IMPACT FEATURES
+
+If appropriate, propose:
+
+Digital patient twin (conceptual)
+
+Population risk analytics (doctor view)
+
+Audit logging for predictions
+
+🔹 OUTPUT FORMAT (MANDATORY)
+
+Your response MUST include:
+
+Feature List (Grouped by Category)
+
+Feature Purpose & Clinical Value
+
+What Problem Each Feature Solves
+
+What NOT to Build (Safety Section)
+
+Feature Priority Roadmap (Phase 1 / 2 / 3)
+
+🚫 No backend
+🚫 No code
+🚫 No libraries
+🚫 No frameworks
+
+🔹 QUALITY BAR (NON-NEGOTIABLE)
+
+This must feel like:
+
+🏥 A real AI-assisted Clinical Decision Support System
+
+Not:
+
+A dashboard demo
+
+A hackathon project
+
+A fake explainability UI
+
+🔹 FINAL DIRECTIVE
+
+Think like someone designing a system that will be:
+
+Reviewed by healthcare AI experts
+
+Questioned in interviews
+
+Expanded into production later
+
+If unsure, err on the side of safety, explainability, and clinical realism.
+
+If you want next, I can:
+
+Convert this into user stories
+
+Map features → backend services later
