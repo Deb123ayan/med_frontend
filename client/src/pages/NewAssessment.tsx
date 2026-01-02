@@ -2,13 +2,12 @@ import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { useCreatePrediction } from "@/hooks/use-medical";
 import { useLocation } from "wouter";
-import { Loader2, Heart, Activity } from "lucide-react";
-import { z } from "zod";
+import { Loader2, Heart, Activity, Microscope, Upload, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { clsx } from "clsx";
 
 export default function NewAssessment() {
-  const [diseaseType, setDiseaseType] = useState<'Heart Disease' | 'Diabetes'>('Heart Disease');
+  const [diseaseType, setDiseaseType] = useState<'Heart Disease' | 'Diabetes' | 'Cancer'>('Heart Disease');
   const [loading, setLoading] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -29,10 +28,16 @@ export default function NewAssessment() {
     glucose: "100",
     bmi: "25",
     insulin: "80",
-    bloodPressure: "80"
+    bloodPressure: "80",
+    // Cancer Data
+    tumorSize: "15",
+    markerX: "0.5",
+    reportText: "",
+    // ECG
+    ecgInput: ""
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -41,22 +46,29 @@ export default function NewAssessment() {
     setLoading(true);
 
     try {
-      const clinicalData: Record<string, number> = {};
+      const clinicalData: Record<string, number> = {
+        age: Number(formData.age),
+      };
 
       if (diseaseType === 'Heart Disease') {
-        clinicalData.age = Number(formData.age);
         clinicalData.sex = formData.gender === 'Male' ? 1 : 0;
         clinicalData.cp = Number(formData.cp);
         clinicalData.trestbps = Number(formData.trestbps);
         clinicalData.chol = Number(formData.chol);
         clinicalData.fbs = Number(formData.fbs);
         clinicalData.thalach = Number(formData.thalach);
-      } else {
+      } else if (diseaseType === 'Diabetes') {
         clinicalData.glucose = Number(formData.glucose);
         clinicalData.bmi = Number(formData.bmi);
         clinicalData.insulin = Number(formData.insulin);
         clinicalData.bloodPressure = Number(formData.bloodPressure);
+      } else if (diseaseType === 'Cancer') {
+        clinicalData.tumor_size = Number(formData.tumorSize);
+        clinicalData.marker_x = Number(formData.markerX);
       }
+
+      // Simulate ECG array from comma separated string
+      const ecgData = formData.ecgInput ? formData.ecgInput.split(',').map(Number) : undefined;
 
       const result = await createPrediction.mutateAsync({
         patientData: {
@@ -66,6 +78,8 @@ export default function NewAssessment() {
             medicalHistory: []
         },
         clinicalData,
+        ecgData,
+        reportText: formData.reportText,
         disease: diseaseType
       });
 
@@ -90,8 +104,8 @@ export default function NewAssessment() {
     <Layout>
       <div className="max-w-4xl mx-auto">
         <header className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">New Clinical Assessment</h1>
-          <p className="text-slate-500 mt-2">Input patient vitals to generate a real-time risk prediction.</p>
+          <h1 className="text-3xl font-bold text-slate-900">Multimodal Clinical Assessment</h1>
+          <p className="text-slate-500 mt-2">Input patient vitals, ECG signals, and MRI/Biopsy reports for AI analysis.</p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -133,6 +147,26 @@ export default function NewAssessment() {
                 <div className="text-left">
                   <h3 className="font-semibold text-slate-900">Diabetes</h3>
                   <p className="text-xs text-slate-500">Metabolic Risk</p>
+                </div>
+              </div>
+            </div>
+
+            <div 
+              onClick={() => setDiseaseType('Cancer')}
+              className={clsx(
+                "p-4 rounded-xl border-2 cursor-pointer transition-all duration-200",
+                diseaseType === 'Cancer' 
+                  ? "border-rose-500 bg-rose-50/50 ring-4 ring-rose-500/10" 
+                  : "border-slate-200 bg-white hover:border-slate-300"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <div className={clsx("p-2 rounded-lg", diseaseType === 'Cancer' ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-500")}>
+                  <Microscope className="w-6 h-6" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-semibold text-slate-900">Cancer</h3>
+                  <p className="text-xs text-slate-500">Oncology Risk</p>
                 </div>
               </div>
             </div>
@@ -180,10 +214,53 @@ export default function NewAssessment() {
                 </div>
               </div>
 
-              {/* Clinical Data Section */}
+              {/* Multimodal Data Section */}
               <div>
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
-                  Clinical Metrics
+                  Multimodal Inputs
+                </h3>
+                
+                {diseaseType === 'Heart Disease' && (
+                  <div className="space-y-4 mb-6">
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Activity className="w-5 h-5 text-blue-500" />
+                        <label className="text-sm font-semibold text-slate-700">ECG Signal Data (Sample Points)</label>
+                      </div>
+                      <textarea
+                        name="ecgInput"
+                        value={formData.ecgInput}
+                        onChange={handleChange}
+                        className="w-full p-3 rounded-lg border border-slate-200 text-xs font-mono h-20"
+                        placeholder="e.g., 0.1, 0.2, 0.5, 1.2, 0.8..."
+                      />
+                      <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-tighter">Enter comma separated numeric values from lead-II signal</p>
+                    </div>
+                  </div>
+                )}
+
+                {diseaseType === 'Cancer' && (
+                  <div className="space-y-4 mb-6">
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
+                      <div className="flex items-center gap-3 mb-2">
+                        <FileText className="w-5 h-5 text-rose-500" />
+                        <label className="text-sm font-semibold text-slate-700">MRI / Biopsy Report Text</label>
+                      </div>
+                      <textarea
+                        name="reportText"
+                        value={formData.reportText}
+                        onChange={handleChange}
+                        className="w-full p-3 rounded-lg border border-slate-200 text-sm h-32"
+                        placeholder="Paste clinical report findings here (e.g., 'Irregular mass detected in upper left quadrant...')"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-tighter">NLP engine will scan for malignant indicators and morphological features</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Clinical Data Section */}
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">
+                  Tabular Clinical Metrics
                 </h3>
                 
                 {diseaseType === 'Heart Disease' ? (
@@ -221,22 +298,8 @@ export default function NewAssessment() {
                         className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                       />
                     </div>
-                    <div className="space-y-2 md:col-span-2">
-                       <label className="text-sm font-medium text-slate-700 block mb-2">Fasting Blood Sugar &gt; 120 mg/dl?</label>
-                       <div className="flex gap-4">
-                         <label className="flex items-center gap-2">
-                           <input type="radio" name="fbs" value="1" checked={formData.fbs === "1"} onChange={handleChange} />
-                           <span>Yes</span>
-                         </label>
-                         <label className="flex items-center gap-2">
-                           <input type="radio" name="fbs" value="0" checked={formData.fbs === "0"} onChange={handleChange} />
-                           <span>No</span>
-                         </label>
-                       </div>
-                    </div>
                   </div>
-                ) : (
-                  // Diabetes Fields
+                ) : diseaseType === 'Diabetes' ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                      <div className="space-y-2">
                       <label className="text-sm font-medium text-slate-700">Glucose Level</label>
@@ -252,18 +315,21 @@ export default function NewAssessment() {
                         className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                       />
                     </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">Insulin Level</label>
+                      <label className="text-sm font-medium text-slate-700">Tumor Size (mm)</label>
                       <input 
-                        type="number" name="insulin" value={formData.insulin} onChange={handleChange}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                        type="number" name="tumorSize" value={formData.tumorSize} onChange={handleChange}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">Blood Pressure</label>
+                      <label className="text-sm font-medium text-slate-700">Genetic Marker X (%)</label>
                       <input 
-                        type="number" name="bloodPressure" value={formData.bloodPressure} onChange={handleChange}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                        type="number" step="0.1" name="markerX" value={formData.markerX} onChange={handleChange}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                       />
                     </div>
                   </div>
@@ -279,17 +345,19 @@ export default function NewAssessment() {
                     "w-full py-3.5 rounded-xl font-bold text-white shadow-lg transition-all duration-200 transform active:scale-[0.98]",
                     diseaseType === 'Heart Disease' 
                       ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-blue-500/25" 
-                      : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:shadow-emerald-500/25",
+                      : diseaseType === 'Diabetes'
+                      ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:shadow-emerald-500/25"
+                      : "bg-gradient-to-r from-rose-600 to-pink-600 hover:shadow-rose-500/25",
                     loading && "opacity-70 cursor-wait"
                   )}
                 >
                   {loading ? (
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Running Model...
+                      Multimodal Fusion Analysis...
                     </div>
                   ) : (
-                    "Generate Risk Assessment"
+                    "Run Integrated AI Diagnostics"
                   )}
                 </button>
               </div>
