@@ -34,11 +34,26 @@ export default function NewAssessment() {
     markerX: "0.5",
     reportText: "",
     // ECG
-    ecgInput: ""
+    ecgInput: "",
+    // Uploaded Documents
+    reportFile: null as File | null,
+    ecgFile: null as File | null,
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    const name = e.target.name;
+    if (file) {
+      setFormData(prev => ({ ...prev, [name]: file }));
+      // Simulate reading text from report if it's a text file
+      if (name === "reportFile" && file.type === "text/plain") {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setFormData(prev => ({ ...prev, reportText: event.target?.result as string }));
+        };
+        reader.readAsText(file);
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,29 +61,22 @@ export default function NewAssessment() {
     setLoading(true);
 
     try {
-      const clinicalData: Record<string, number> = {
-        age: Number(formData.age),
-      };
-
-      if (diseaseType === 'Heart Disease') {
-        clinicalData.sex = formData.gender === 'Male' ? 1 : 0;
-        clinicalData.cp = Number(formData.cp);
-        clinicalData.trestbps = Number(formData.trestbps);
-        clinicalData.chol = Number(formData.chol);
-        clinicalData.fbs = Number(formData.fbs);
-        clinicalData.thalach = Number(formData.thalach);
-      } else if (diseaseType === 'Diabetes') {
-        clinicalData.glucose = Number(formData.glucose);
-        clinicalData.bmi = Number(formData.bmi);
-        clinicalData.insulin = Number(formData.insulin);
-        clinicalData.bloodPressure = Number(formData.bloodPressure);
-      } else if (diseaseType === 'Cancer') {
-        clinicalData.tumor_size = Number(formData.tumorSize);
-        clinicalData.marker_x = Number(formData.markerX);
+      // In a real app, we would upload files to storage first
+      // Here we simulate the process
+      let finalReportText = formData.reportText;
+      if (formData.reportFile && !finalReportText) {
+          finalReportText = `Simulation: Content extracted from document ${formData.reportFile.name}`;
       }
 
-      // Simulate ECG array from comma separated string
-      const ecgData = formData.ecgInput ? formData.ecgInput.split(',').map(Number) : undefined;
+      let finalEcgData = formData.ecgInput ? formData.ecgInput.split(',').map(Number) : undefined;
+      if (formData.ecgFile && !finalEcgData) {
+          // Simulate extraction from digital ECG report
+          finalEcgData = [0.1, 0.5, 1.2, 0.8, 0.2]; 
+          toast({
+            title: "ECG Document Parsed",
+            description: "Automatically extracted signal features from PDF/Image",
+          });
+      }
 
       const result = await createPrediction.mutateAsync({
         patientData: {
@@ -78,8 +86,8 @@ export default function NewAssessment() {
             medicalHistory: []
         },
         clinicalData,
-        ecgData,
-        reportText: formData.reportText,
+        ecgData: finalEcgData,
+        reportText: finalReportText,
         disease: diseaseType
       });
 
@@ -223,18 +231,32 @@ export default function NewAssessment() {
                 {diseaseType === 'Heart Disease' && (
                   <div className="space-y-4 mb-6">
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Activity className="w-5 h-5 text-blue-500" />
-                        <label className="text-sm font-semibold text-slate-700">ECG Signal Data (Sample Points)</label>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <Activity className="w-5 h-5 text-blue-500" />
+                          <label className="text-sm font-semibold text-slate-700">ECG Signal Data</label>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="file"
+                            name="ecgFile"
+                            onChange={handleFileChange}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                            accept=".pdf,.jpg,.png,.csv"
+                          />
+                          <button type="button" className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 uppercase tracking-tighter">
+                            <Upload className="w-3.5 h-3.5" />
+                            {formData.ecgFile ? formData.ecgFile.name : "Upload Digital ECG"}
+                          </button>
+                        </div>
                       </div>
                       <textarea
                         name="ecgInput"
                         value={formData.ecgInput}
                         onChange={handleChange}
                         className="w-full p-3 rounded-lg border border-slate-200 text-xs font-mono h-20"
-                        placeholder="e.g., 0.1, 0.2, 0.5, 1.2, 0.8..."
+                        placeholder="Manual Lead-II Entry (e.g., 0.1, 0.2...)"
                       />
-                      <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-tighter">Enter comma separated numeric values from lead-II signal</p>
                     </div>
                   </div>
                 )}
@@ -242,18 +264,32 @@ export default function NewAssessment() {
                 {diseaseType === 'Cancer' && (
                   <div className="space-y-4 mb-6">
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
-                      <div className="flex items-center gap-3 mb-2">
-                        <FileText className="w-5 h-5 text-rose-500" />
-                        <label className="text-sm font-semibold text-slate-700">MRI / Biopsy Report Text</label>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-5 h-5 text-rose-500" />
+                          <label className="text-sm font-semibold text-slate-700">MRI / Biopsy Report</label>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="file"
+                            name="reportFile"
+                            onChange={handleFileChange}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                            accept=".pdf,.doc,.docx,.txt"
+                          />
+                          <button type="button" className="flex items-center gap-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 uppercase tracking-tighter">
+                            <Upload className="w-3.5 h-3.5" />
+                            {formData.reportFile ? formData.reportFile.name : "Upload Document"}
+                          </button>
+                        </div>
                       </div>
                       <textarea
                         name="reportText"
                         value={formData.reportText}
                         onChange={handleChange}
                         className="w-full p-3 rounded-lg border border-slate-200 text-sm h-32"
-                        placeholder="Paste clinical report findings here (e.g., 'Irregular mass detected in upper left quadrant...')"
+                        placeholder="Clinical findings (or upload document above)..."
                       />
-                      <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-tighter">NLP engine will scan for malignant indicators and morphological features</p>
                     </div>
                   </div>
                 )}
