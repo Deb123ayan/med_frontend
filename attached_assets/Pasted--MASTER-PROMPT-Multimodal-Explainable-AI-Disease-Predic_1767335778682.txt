@@ -1,0 +1,143 @@
+🧠 MASTER PROMPT
+Multimodal Explainable AI Disease Prediction System
+
+🔹 ROLE
+You are a senior AI architect + full-stack engineer with experience in healthcare AI, MLOps, and scalable web applications.
+
+🔹 OBJECTIVE
+Build a breakthrough AI/ML healthcare system that predicts early disease risk using multimodal data and provides explainable, ethical, and clinically realistic outputs.
+The project must strictly follow a clean folder structure with separate BACKEND and FRONTEND directories.
+
+🔹 CORE REQUIREMENTS (MANDATORY)
+✅ Diseases
+Start with:
+Heart Disease
+Diabetes (architecture must support adding more diseases later)
+
+✅ AI / ML FEATURES
+Multimodal inputs:
+Tabular clinical data
+Time-series health data (ECG / heart rate)
+Optional medical images (X-ray placeholder)
+Models:
+Tabular → XGBoost / RandomForest
+Time-series → LSTM
+Image → CNN (ResNet / EfficientNet)
+Fusion layer to combine outputs
+Outputs:
+Disease risk probability (%)
+Risk category (Low / Medium / High)
+Confidence score
+Top contributing features
+Explainable AI:
+SHAP for tabular models
+Attention / heatmap placeholder for images
+Counterfactual Analysis:
+Show “What-if” scenarios (e.g., BP reduced → risk reduced)
+Bias & Uncertainty:
+Bias check by age and gender
+Uncertainty estimation (Monte Carlo Dropout or confidence score)
+
+🔹 SYSTEM ARCHITECTURE
+🧩 BACKEND (STRICTLY SEPARATE FOLDER)
+Technology
+Python
+FastAPI
+scikit-learn
+PyTorch / TensorFlow
+SHAP
+PostgreSQL / SQLite
+Folder Structure (MANDATORY)
+backend/
+│── app/
+│   │── main.py                # FastAPI entry point
+│   │── api/
+│   │   ├── routes/
+│   │   │   ├── predict.py
+│   │   │   ├── explain.py
+│   │   │   ├── counterfactual.py
+│   │   │   └── bias_check.py
+│   │── models/
+│   │   ├── tabular_model.py
+│   │   ├── timeseries_model.py
+│   │   ├── image_model.py
+│   │   └── fusion_model.py
+│   │── services/
+│   │   ├── preprocessing.py
+│   │   ├── inference.py
+│   │   ├── explainability.py
+│   │   └── uncertainty.py
+│   │── database/
+│   │   ├── db.py
+│   │   └── schemas.py
+│   │── utils/
+│   │   └── validators.py
+│── requirements.txt
+│── README.md
+
+Backend Rules
+Backend must expose REST APIs only
+No frontend code inside backend
+Models must be modular & reusable
+APIs must return JSON responses
+Add medical disclaimer in responses
+
+🎨 FRONTEND (STRICTLY SEPARATE FOLDER)
+Technology
+React 
+Tailwind CSS
+Axios / Fetch API
+Chart.js / Recharts
+Folder Structure (MANDATORY)
+frontend/
+│── src/
+│   │── components/
+│   │   ├── PatientForm.jsx
+│   │   ├── RiskDashboard.jsx
+│   │   ├── ExplainabilityPanel.jsx
+│   │   ├── BiasReport.jsx
+│   │   └── CounterfactualSimulator.jsx
+│   │── pages/
+│   │   ├── Home.jsx
+│   │   └── Dashboard.jsx
+│   │── services/
+│   │   └── api.js
+│   │── utils/
+│   │   └── validators.js
+│── README.md
+
+Frontend Rules
+Must communicate only via backend APIs
+Display:
+Risk score
+Graphs & trends
+Explainability charts
+Counterfactual sliders
+Include “AI-assisted, not medical advice” disclaimer
+
+🔹 EXTRA ADVANCED FEATURES (OPTIONAL BUT VALUABLE)
+Federated learning (simulated)
+Digital patient twin
+Continuous learning pipeline
+Multilingual support (English + Hindi)
+Role-based dashboards (Patient / Doctor)
+
+🔹 OUTPUT FORMAT (IMPORTANT)
+When generating code:
+Generate backend first
+Then generate frontend
+Explain each folder briefly
+Provide run instructions
+Provide API endpoint list
+Include sample request & response JSON
+
+🔹 QUALITY EXPECTATIONS
+Clean code
+Industry-level structure
+Scalable design
+Interview-ready explanations
+Research-grade documentation
+
+🔹 FINAL NOTE
+This project must feel like:
+An AI-assisted Clinical Decision Support System, not a toy ML notebook
