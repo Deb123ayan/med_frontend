@@ -40,6 +40,10 @@ export default function NewAssessment() {
     ecgFile: null as File | null,
   });
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     const name = e.target.name;
@@ -76,6 +80,27 @@ export default function NewAssessment() {
             title: "ECG Document Parsed",
             description: "Automatically extracted signal features from PDF/Image",
           });
+      }
+
+      const clinicalData: Record<string, number> = {
+        age: Number(formData.age),
+      };
+
+      if (diseaseType === 'Heart Disease') {
+        clinicalData.sex = formData.gender === 'Male' ? 1 : 0;
+        clinicalData.cp = Number(formData.cp);
+        clinicalData.trestbps = Number(formData.trestbps);
+        clinicalData.chol = Number(formData.chol);
+        clinicalData.fbs = Number(formData.fbs);
+        clinicalData.thalach = Number(formData.thalach);
+      } else if (diseaseType === 'Diabetes') {
+        clinicalData.glucose = Number(formData.glucose);
+        clinicalData.bmi = Number(formData.bmi);
+        clinicalData.insulin = Number(formData.insulin);
+        clinicalData.bloodPressure = Number(formData.bloodPressure);
+      } else if (diseaseType === 'Cancer') {
+        clinicalData.tumor_size = Number(formData.tumorSize);
+        clinicalData.marker_x = Number(formData.markerX);
       }
 
       const result = await createPrediction.mutateAsync({
