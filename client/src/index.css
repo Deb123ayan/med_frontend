@@ -73,6 +73,25 @@
     font-family: var(--font-display);
     @apply font-bold tracking-tight text-slate-900 dark:text-slate-50;
   }
+
+  /* Phone-specific optimizations */
+  @media (max-width: 767px) {
+    /* Ensure minimum touch target size of 44px */
+    button, a, input, select, textarea {
+      min-height: 44px;
+    }
+    
+    /* Improve text readability on small screens */
+    body {
+      font-size: 16px; /* Prevents zoom on iOS */
+      line-height: 1.5;
+    }
+    
+    /* Optimize scrolling on mobile */
+    * {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
 }
 
 @layer utilities {
@@ -82,5 +101,18 @@
   
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600;
+  }
+
+  /* Phone-specific utilities */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+  
+  .phone-padding {
+    @apply px-3 md:px-6;
+  }
+  
+  .phone-text {
+    @apply text-sm md:text-base;
   }
 }

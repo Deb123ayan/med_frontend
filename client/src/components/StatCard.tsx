@@ -17,21 +17,22 @@ export function StatCard({ label, value, trend, icon: Icon, color = 'blue' }: St
   };
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300">
+    <div className="bg-white rounded-lg md:rounded-xl p-3 md:p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300">
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-medium text-slate-500 mb-1">{label}</p>
-          <h3 className="text-2xl font-bold text-slate-900">{value}</h3>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs md:text-sm font-medium text-slate-500 mb-1 truncate">{label}</p>
+          <h3 className="text-lg md:text-2xl font-bold text-slate-900">{value}</h3>
           
           {trend && (
-            <div className={`flex items-center mt-2 text-xs font-medium ${trend.type === 'up' ? 'text-emerald-600' : 'text-rose-600'}`}>
+            <div className={`flex items-center mt-1 md:mt-2 text-xs font-medium ${trend.type === 'up' ? 'text-emerald-600' : 'text-rose-600'}`}>
               {trend.type === 'up' ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
-              {trend.value} from last month
+              <span className="hidden sm:inline">{trend.value} from last month</span>
+              <span className="sm:hidden">{trend.value}</span>
             </div>
           )}
         </div>
-        <div className={`p-3 rounded-lg border ${colorMap[color]}`}>
-          <Icon className="w-6 h-6" />
+        <div className={`p-2 md:p-3 rounded-lg border ${colorMap[color]} flex-shrink-0 ml-2`}>
+          <Icon className="w-4 h-4 md:w-6 md:h-6" />
         </div>
       </div>
     </div>

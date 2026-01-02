@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend-Backend Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .loading { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 Frontend-Backend Connection Test</h1>
+        <p>This page tests if your React frontend can successfully connect to the Django backend.</p>
+        
+        <div id="status" class="status loading">🔄 Ready to test...</div>
+        
+        <button onclick="testConnection()">Test API Connection</button>
+        <button onclick="testPatients()">Test Patients API</button>
+        <button onclick="testPredictions()">Test Predictions API</button>
+        <button onclick="testPredictionCreation()">Test Prediction Creation</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:8000/api';
+        
+        function updateStatus(message, type = 'loading') {
+            const status = document.getElementById('status');
+            status.className = `status ${type}`;
+            status.innerHTML = message;
+        }
+        
+        function showResults(data, title) {
+            const results = document.getElementById('results');
+            results.innerHTML = `
+                <h3>${title}</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+        }
+        
+        async function testConnection() {
+            updateStatus('🔄 Testing basic connection...', 'loading');
+            try {
+                const response = await fetch(`${API_BASE}/patients/`);
+                if (response.ok) {
+                    updateStatus('✅ Connection successful! Django backend is reachable.', 'success');
+                    return true;
+                } else {
+                    updateStatus(`❌ Connection failed: HTTP ${response.status}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                updateStatus(`❌ Connection error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        async function testPatients() {
+            updateStatus('🔄 Testing Patients API...', 'loading');
+            try {
+                const response = await fetch(`${API_BASE}/patients/`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateStatus(`✅ Patients API working! Found ${data.length} patients.`, 'success');
+                    showResults(data, '👥 Patients Data');
+                } else {
+                    updateStatus(`❌ Patients API error: ${data.message || 'Unknown error'}`, 'error');
+                    showResults(data, '❌ Error Response');
+                }
+            } catch (error) {
+                updateStatus(`❌ Patients API error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testPredictions() {
+            updateStatus('🔄 Testing Predictions API...', 'loading');
+            try {
+                const response = await fetch(`${API_BASE}/predictions/`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateStatus(`✅ Predictions API working! Found ${data.length} predictions.`, 'success');
+                    showResults(data, '🧠 Predictions Data');
+                    
+                    // Check if the data has the correct camelCase fields
+                    if (data.length > 0) {
+                        const pred = data[0];
+                        if (pred.riskScore !== undefined && pred.riskCategory !== undefined) {
+                            updateStatus(`✅ Perfect! API returns camelCase fields as expected.`, 'success');
+                        } else {
+                            updateStatus(`⚠️ Warning: API returns snake_case fields, frontend expects camelCase.`, 'error');
+                        }
+                    }
+                } else {
+                    updateStatus(`❌ Predictions API error: ${data.message || 'Unknown error'}`, 'error');
+                    showResults(data, '❌ Error Response');
+                }
+            } catch (error) {
+                updateStatus(`❌ Predictions API error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testPredictionCreation() {
+            updateStatus('🔄 Testing Prediction Creation...', 'loading');
+            try {
+                const testData = {
+                    patient_data: {
+                        name: "Test Patient",
+                        age: 55,
+                        gender: "Male",
+                        medical_history: ["Hypertension"]
+                    },
+                    clinical_data: {
+                        cholesterol: 240,
+                        blood_pressure_systolic: 160,
+                        blood_pressure_diastolic: 95,
+                        heart_rate: 80
+                    },
+                    disease: "Heart Disease"
+                };
+                
+                const response = await fetch(`${API_BASE}/predictions/predict/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateStatus(`✅ Prediction creation working! Risk: ${data.riskCategory} (${data.riskScore?.toFixed(1)}%)`, 'success');
+                    showResults(data, '🎯 Prediction Result');
+                } else {
+                    updateStatus(`❌ Prediction creation error: ${data.message || 'Unknown error'}`, 'error');
+                    showResults(data, '❌ Error Response');
+                }
+            } catch (error) {
+                updateStatus(`❌ Prediction creation error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-test on page load
+        window.onload = () => {
+            setTimeout(testConnection, 1000);
+        };
+    </script>
+</body>
+</html>

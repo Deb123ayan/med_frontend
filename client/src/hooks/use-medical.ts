@@ -34,7 +34,7 @@ export function usePatient(id: number) {
 export function useCreatePatient() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: z.infer<typeof api.patients.create.input>) => {
+    mutationFn: async (data: any) => {
       const res = await fetch(api.patients.create.path, {
         method: api.patients.create.method,
         headers: { "Content-Type": "application/json" },
@@ -103,7 +103,7 @@ export function useCreatePrediction() {
 
 export function useCounterfactual() {
   return useMutation({
-    mutationFn: async ({ id, changes }: { id: number, changes: Record<string, number> }) => {
+    mutationFn: async ({ id, changes }: { id: number, changes: Record<string, number | string> }) => {
       const url = buildUrl(api.predictions.counterfactual.path, { id });
       const res = await fetch(url, {
         method: api.predictions.counterfactual.method,

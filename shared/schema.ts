@@ -51,13 +51,13 @@ export const insertPredictionSchema = createInsertSchema(predictions).omit({ id:
 // === TYPES ===
 
 export type Patient = typeof patients.$inferSelect;
-export type InsertPatient = z.infer<typeof insertPatientSchema>;
+export type InsertPatient = any; // z.infer<typeof insertPatientSchema>;
 
 export type HealthRecord = typeof healthRecords.$inferSelect;
-export type InsertHealthRecord = z.infer<typeof insertHealthRecordSchema>;
+export type InsertHealthRecord = any; // z.infer<typeof insertHealthRecordSchema>;
 
 export type Prediction = typeof predictions.$inferSelect;
-export type InsertPrediction = z.infer<typeof insertPredictionSchema>;
+export type InsertPrediction = any; // z.infer<typeof insertPredictionSchema>;
 
 // API Request/Response Types
 export type PredictionRequest = {

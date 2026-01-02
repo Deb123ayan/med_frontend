@@ -18,14 +18,14 @@ export const api = {
   patients: {
     list: {
       method: 'GET' as const,
-      path: '/api/patients',
+      path: '/api/patients/',
       responses: {
         200: z.array(z.custom<typeof patients.$inferSelect>()),
       },
     },
     create: {
       method: 'POST' as const,
-      path: '/api/patients',
+      path: '/api/patients/',
       input: insertPatientSchema,
       responses: {
         201: z.custom<typeof patients.$inferSelect>(),
@@ -34,7 +34,7 @@ export const api = {
     },
     get: {
       method: 'GET' as const,
-      path: '/api/patients/:id',
+      path: '/api/patients/:id/',
       responses: {
         200: z.custom<typeof patients.$inferSelect>(),
         404: errorSchemas.notFound,
@@ -44,11 +44,11 @@ export const api = {
   predictions: {
     predict: {
       method: 'POST' as const,
-      path: '/api/predict',
+      path: '/api/predictions/predict/',
       input: z.object({
         patientId: z.number().optional(),
-        patientData: insertPatientSchema.optional(),
-        clinicalData: z.record(z.number()),
+        patientData: insertPatientSchema.optional() as any,
+        clinicalData: z.record(z.union([z.number(), z.string()])),
         ecgData: z.array(z.number()).optional(),
         reportText: z.string().optional(),
         imageMetadata: z.object({
@@ -56,6 +56,13 @@ export const api = {
             type: z.string(),
             scanType: z.enum(['MRI', 'X-ray', 'CT', 'Biopsy'])
         }).optional(),
+        medicalImages: z.array(z.object({
+          filename: z.string(),
+          scanType: z.string(),
+          bodyPart: z.string(),
+          description: z.string().optional(),
+          imageData: z.string() // base64 encoded image
+        })).optional(),
         disease: z.enum(['Heart Disease', 'Diabetes', 'Cancer']),
       }),
       responses: {
@@ -73,7 +80,7 @@ export const api = {
     },
     list: {
         method: 'GET' as const,
-        path: '/api/predictions',
+        path: '/api/predictions/',
         responses: {
             200: z.array(z.custom<typeof predictions.$inferSelect>()),
         }
@@ -82,7 +89,7 @@ export const api = {
       method: 'POST' as const,
       path: '/api/predictions/:id/counterfactual',
       input: z.object({
-        changes: z.record(z.number()),
+        changes: z.record(z.union([z.number(), z.string()])),
       }),
       responses: {
         200: z.custom<typeof predictions.$inferSelect>(), // Returns a hypothetical prediction
