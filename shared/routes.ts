@@ -50,7 +50,13 @@ export const api = {
         patientData: insertPatientSchema.optional(),
         clinicalData: z.record(z.number()),
         ecgData: z.array(z.number()).optional(),
-        disease: z.enum(['Heart Disease', 'Diabetes']),
+        reportText: z.string().optional(),
+        imageMetadata: z.object({
+            url: z.string(),
+            type: z.string(),
+            scanType: z.enum(['MRI', 'X-ray', 'CT', 'Biopsy'])
+        }).optional(),
+        disease: z.enum(['Heart Disease', 'Diabetes', 'Cancer']),
       }),
       responses: {
         201: z.custom<typeof predictions.$inferSelect>(),

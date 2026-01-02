@@ -63,7 +63,9 @@ export async function registerRoutes(
       try {
         const response = await axios.post(`${ML_SERVICE_URL}/predict`, {
           data: input.clinicalData,
-          disease: input.disease
+          disease: input.disease,
+          report_text: input.reportText,
+          ecg_data: input.ecgData
         });
         mlResult = response.data;
       } catch (err) {
@@ -72,10 +74,8 @@ export async function registerRoutes(
       }
 
       // 2. Multimodal Fusion (Simulated weighting for now)
-      // If image or ECG exists, adjust risk
-      if (input.ecgData && input.ecgData.length > 0) {
-          mlResult.risk_score *= 1.1; // Simulated fusion impact
-      }
+      // If findings from multimodal scanning exist, they've already adjusted risk_score in the service.
+      // We can add further weighting here if needed.
 
       // 3. Store Prediction
       const predictionData: InsertPrediction = {
@@ -96,7 +96,8 @@ export async function registerRoutes(
         patientId,
         clinicalData: input.clinicalData,
         ecgData: input.ecgData || null,
-        imageMetadata: null
+        imageMetadata: input.imageMetadata || null,
+        reportText: input.reportText || null
       });
 
       res.status(201).json(prediction);

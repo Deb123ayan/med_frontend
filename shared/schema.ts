@@ -20,15 +20,17 @@ export const healthRecords = pgTable("health_records", {
   clinicalData: jsonb("clinical_data").notNull().$type<Record<string, number>>(),
   // Time-series metadata or reference (e.g., ECG signal points)
   ecgData: jsonb("ecg_data").$type<number[]>(),
-  // Image metadata
-  imageMetadata: jsonb("image_metadata").$type<{url: string, type: string, findings?: string}>(),
+  // Image metadata (MRI, X-ray, Biopsy)
+  imageMetadata: jsonb("image_metadata").$type<{url: string, type: string, findings?: string, scanType?: "MRI" | "X-ray" | "CT"}>(),
+  // Report Text (for NLP scanning)
+  reportText: text("report_text"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const predictions = pgTable("predictions", {
   id: serial("id").primaryKey(),
   patientId: integer("patient_id").notNull(),
-  disease: text("disease").notNull(), // 'Heart Disease', 'Diabetes'
+  disease: text("disease").notNull(), // 'Heart Disease', 'Diabetes', 'Cancer'
   riskScore: doublePrecision("risk_score").notNull(), // 0-100
   riskCategory: text("risk_category").notNull(), // 'Low', 'Medium', 'High'
   confidence: doublePrecision("confidence").notNull(), // 0-1
@@ -63,8 +65,9 @@ export type PredictionRequest = {
   patientData?: InsertPatient;
   clinicalData: Record<string, number>;
   ecgData?: number[];
+  reportText?: string;
   imageUrl?: string;
-  disease: 'Heart Disease' | 'Diabetes';
+  disease: 'Heart Disease' | 'Diabetes' | 'Cancer';
 };
 
 export type CounterfactualRequest = {
