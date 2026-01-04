@@ -46,17 +46,17 @@ export const api = {
       method: 'POST' as const,
       path: '/api/predictions/predict/',
       input: z.object({
-        patientId: z.number().optional(),
-        patientData: insertPatientSchema.optional() as any,
-        clinicalData: z.record(z.union([z.number(), z.string()])),
-        ecgData: z.array(z.number()).optional(),
-        reportText: z.string().optional(),
-        imageMetadata: z.object({
+        patient_id: z.number().optional(),
+        patient_data: insertPatientSchema.optional() as any,
+        clinical_data: z.record(z.union([z.number(), z.string()])),
+        ecg_data: z.array(z.number()).optional(),
+        report_text: z.string().optional(),
+        image_metadata: z.object({
             url: z.string(),
             type: z.string(),
             scanType: z.enum(['MRI', 'X-ray', 'CT', 'Biopsy'])
         }).optional(),
-        medicalImages: z.array(z.object({
+        medical_images: z.array(z.object({
           filename: z.string(),
           scanType: z.string(),
           bodyPart: z.string(),

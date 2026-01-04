@@ -42,8 +42,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const storedDoctor = localStorage.getItem('doctor_data');
     
     if (storedToken && storedDoctor) {
-      setToken(storedToken);
-      setDoctor(JSON.parse(storedDoctor));
+      try {
+        setToken(storedToken);
+        setDoctor(JSON.parse(storedDoctor));
+      } catch (error) {
+        console.error('Error parsing stored doctor data:', error);
+        // Clear invalid data
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('doctor_data');
+      }
     }
     setIsLoading(false);
   }, []);

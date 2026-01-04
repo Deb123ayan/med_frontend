@@ -284,15 +284,15 @@ export default function NewAssessment() {
       }
 
       const result = await createPrediction.mutateAsync({
-        patientData: {
+        patient_data: {
           name: formData.name,
           age: Number(formData.age),
           gender: formData.gender,
-          medicalHistory: [],
+          medical_history: [],
         },
-        clinicalData: clinicalData as Record<string, number | string>,
-        ecgData: finalEcgData,
-        medicalImages: medicalImages,
+        clinical_data: clinicalData as Record<string, number | string>,
+        ecg_data: finalEcgData,
+        medical_images: medicalImages,
         disease: diseaseType,
       });
 

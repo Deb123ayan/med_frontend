@@ -1,5 +1,6 @@
 import { Layout } from "@/components/Layout";
 import { StatCard } from "@/components/StatCard";
+import { AuthDebug } from "@/components/AuthDebug";
 import { usePredictions, usePatients } from "@/hooks/use-medical";
 import { Users, Activity, AlertTriangle, FileText, ArrowRight, Plus } from "lucide-react";
 import { Link } from "wouter";
@@ -17,6 +18,7 @@ export default function Dashboard() {
     : "0.0";
 
   return (
+    <>
     <Layout>
       {/* Mobile-optimized header */}
       <header className="mb-4 md:mb-8">
@@ -188,5 +190,7 @@ export default function Dashboard() {
         )}
       </div>
     </Layout>
+    <AuthDebug />
+    </>
   );
 }

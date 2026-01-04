@@ -2,6 +2,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { z } from "zod";
 
+// Helper function to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Token ${token}` })
+  };
+};
+
 // ============================================
 // PATIENTS HOOKS
 // ============================================
@@ -10,7 +19,9 @@ export function usePatients() {
   return useQuery({
     queryKey: [api.patients.list.path],
     queryFn: async () => {
-      const res = await fetch(api.patients.list.path, { credentials: "include" });
+      const res = await fetch(api.patients.list.path, { 
+        headers: getAuthHeaders()
+      });
       if (!res.ok) throw new Error("Failed to fetch patients");
       return api.patients.list.responses[200].parse(await res.json());
     },
@@ -22,7 +33,9 @@ export function usePatient(id: number) {
     queryKey: [api.patients.get.path, id],
     queryFn: async () => {
       const url = buildUrl(api.patients.get.path, { id });
-      const res = await fetch(url, { credentials: "include" });
+      const res = await fetch(url, { 
+        headers: getAuthHeaders()
+      });
       if (res.status === 404) return null;
       if (!res.ok) throw new Error("Failed to fetch patient");
       return api.patients.get.responses[200].parse(await res.json());
@@ -37,9 +50,8 @@ export function useCreatePatient() {
     mutationFn: async (data: any) => {
       const res = await fetch(api.patients.create.path, {
         method: api.patients.create.method,
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
-        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to create patient");
       return api.patients.create.responses[201].parse(await res.json());
@@ -56,7 +68,9 @@ export function usePredictions() {
   return useQuery({
     queryKey: [api.predictions.list.path],
     queryFn: async () => {
-      const res = await fetch(api.predictions.list.path, { credentials: "include" });
+      const res = await fetch(api.predictions.list.path, { 
+        headers: getAuthHeaders()
+      });
       if (!res.ok) throw new Error("Failed to fetch predictions");
       return api.predictions.list.responses[200].parse(await res.json());
     },
@@ -68,7 +82,9 @@ export function usePrediction(id: number) {
     queryKey: [api.predictions.get.path, id],
     queryFn: async () => {
       const url = buildUrl(api.predictions.get.path, { id });
-      const res = await fetch(url, { credentials: "include" });
+      const res = await fetch(url, { 
+        headers: getAuthHeaders()
+      });
       if (res.status === 404) return null;
       if (!res.ok) throw new Error("Failed to fetch prediction");
       return api.predictions.get.responses[200].parse(await res.json());
@@ -83,9 +99,8 @@ export function useCreatePrediction() {
     mutationFn: async (data: z.infer<typeof api.predictions.predict.input>) => {
       const res = await fetch(api.predictions.predict.path, {
         method: api.predictions.predict.method,
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
-        credentials: "include",
       });
       
       if (!res.ok) {
@@ -107,9 +122,8 @@ export function useCounterfactual() {
       const url = buildUrl(api.predictions.counterfactual.path, { id });
       const res = await fetch(url, {
         method: api.predictions.counterfactual.method,
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ changes }),
-        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to simulate counterfactual");
       return api.predictions.counterfactual.responses[200].parse(await res.json());
