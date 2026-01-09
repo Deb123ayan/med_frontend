@@ -15,52 +15,15 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 
 function Router() {
-  const { doctor, isLoading } = useAuth();
-
-  if (isLoading) {
-    return null; // Loading handled by ProtectedRoute
-  }
-
-  if (!doctor) {
-    return (
-      <Switch>
-        <Route path="/login" component={Login} />
-        <Route path="/register" component={Register} />
-        <Route>
-          <Redirect to="/login" />
-        </Route>
-      </Switch>
-    );
-  }
-
+  // Skip authentication for now - direct access to all routes
   return (
     <Switch>
-      <Route path="/login">
-        <Redirect to="/" />
-      </Route>
-      <Route path="/register">
-        <Redirect to="/" />
-      </Route>
-      <Route path="/">
-        <ProtectedRoute>
-          <Dashboard />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/assess">
-        <ProtectedRoute>
-          <NewAssessment />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/predictions/:id">
-        <ProtectedRoute>
-          <PredictionReport />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/patients">
-        <ProtectedRoute>
-          <Patients />
-        </ProtectedRoute>
-      </Route>
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+      <Route path="/" component={Dashboard} />
+      <Route path="/assess" component={NewAssessment} />
+      <Route path="/predictions/:id" component={PredictionReport} />
+      <Route path="/patients" component={Patients} />
       <Route component={NotFound} />
     </Switch>
   );

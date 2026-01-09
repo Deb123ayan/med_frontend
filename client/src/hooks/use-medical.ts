@@ -2,12 +2,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { z } from "zod";
 
-// Helper function to get auth headers
+// Helper function to get headers (no auth for now)
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('auth_token');
   return {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Token ${token}` })
+    'Content-Type': 'application/json'
   };
 };
 

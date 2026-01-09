@@ -18,7 +18,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
-  const { doctor, logout } = useAuth();
+  
+  // Mock doctor data for now (no auth)
+  const mockDoctor = {
+    first_name: "Demo",
+    last_name: "Doctor",
+    specialization: "General Practice",
+    email: "demo@example.com",
+    hospital_affiliation: "Demo Hospital"
+  };
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -46,19 +54,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs">
-                  {doctor?.first_name?.[0]}{doctor?.last_name?.[0]}
+                  {mockDoctor?.first_name?.[0]}{mockDoctor?.last_name?.[0]}
                 </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">Dr. {doctor?.first_name} {doctor?.last_name}</p>
-                  <p className="text-xs text-muted-foreground">{doctor?.specialization}</p>
+                  <p className="text-sm font-medium">Dr. {mockDoctor?.first_name} {mockDoctor?.last_name}</p>
+                  <p className="text-xs text-muted-foreground">{mockDoctor?.specialization}</p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout}>
+              <DropdownMenuItem onClick={() => console.log('Logout clicked')}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
@@ -168,11 +176,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Button variant="ghost" className="w-full justify-start p-3 h-auto">
                 <div className="flex items-center gap-3 w-full">
                   <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm">
-                    {doctor?.first_name?.[0]}{doctor?.last_name?.[0]}
+                    {mockDoctor?.first_name?.[0]}{mockDoctor?.last_name?.[0]}
                   </div>
                   <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-slate-900">Dr. {doctor?.first_name} {doctor?.last_name}</p>
-                    <p className="text-xs text-slate-500">{doctor?.specialization}</p>
+                    <p className="text-sm font-medium text-slate-900">Dr. {mockDoctor?.first_name} {mockDoctor?.last_name}</p>
+                    <p className="text-xs text-slate-500">{mockDoctor?.specialization}</p>
                   </div>
                 </div>
               </Button>
@@ -180,13 +188,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">Dr. {doctor?.first_name} {doctor?.last_name}</p>
-                  <p className="text-xs text-muted-foreground">{doctor?.email}</p>
-                  <p className="text-xs text-muted-foreground">{doctor?.hospital_affiliation}</p>
+                  <p className="text-sm font-medium">Dr. {mockDoctor?.first_name} {mockDoctor?.last_name}</p>
+                  <p className="text-xs text-muted-foreground">{mockDoctor?.email}</p>
+                  <p className="text-xs text-muted-foreground">{mockDoctor?.hospital_affiliation}</p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout}>
+              <DropdownMenuItem onClick={() => console.log('Logout clicked')}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>

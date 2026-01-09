@@ -60,6 +60,16 @@ export default function NewAssessment() {
     smokingYears: "0",
     packYears: "0",
     psaLevel: "2.5",
+    // Multimodal breast cancer features
+    geneticMarkers: "0",
+    menopauseAge: "51",
+    // Lung cancer specific features
+    copdHistory: "0",
+    asbestosExposure: "0",
+    noduleSize: "1.0",
+    noduleLocation: "1",
+    chestPain: "0",
+    weightLoss: "0",
     // ECG
     ecgInput: "",
     // Medical Images for ResNet Analysis
@@ -211,6 +221,35 @@ export default function NewAssessment() {
     setLoading(true);
 
     try {
+      // Validation for cancer types - image upload is mandatory
+      if (diseaseType === "Cancer") {
+        if (!formData.medicalImageFile && !formData.imageBase64) {
+          toast({
+            title: "Image Required",
+            description: `Medical image upload is mandatory for ${cancerType} analysis`,
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+
+        // Additional validation for lung cancer
+        if (
+          cancerType === "Lung Cancer" &&
+          !formData.medicalImageFile &&
+          !formData.imageBase64
+        ) {
+          toast({
+            title: "CT Scan Required",
+            description:
+              "CT scan image is required for lung cancer multimodal analysis with SHAP explanations",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
       // Handle medical image upload for ResNet analysis
       let medicalImages: any[] = [];
       if (formData.imageBase64 && formData.imageMetadata) {
@@ -265,9 +304,14 @@ export default function NewAssessment() {
 
         // Add cancer-specific features based on type
         if (cancerType === "Breast Cancer") {
+          // Multimodal breast cancer features
           clinicalData.lymph_nodes = Number(formData.lymphNodes);
           clinicalData.grade = Number(formData.grade);
           clinicalData.stage = Number(formData.stage);
+          clinicalData.genetic_markers = Number(formData.geneticMarkers);
+          clinicalData.menopause_age = Number(formData.menopauseAge);
+
+          // Legacy features for compatibility
           clinicalData.er_status = Number(formData.erStatus);
           clinicalData.pr_status = Number(formData.prStatus);
           clinicalData.her2_status = Number(formData.her2Status);
@@ -275,6 +319,12 @@ export default function NewAssessment() {
         } else if (cancerType === "Lung Cancer") {
           clinicalData.smoking_years = Number(formData.smokingYears);
           clinicalData.pack_years = Number(formData.packYears);
+          clinicalData.copd_history = Number(formData.copdHistory);
+          clinicalData.asbestos_exposure = Number(formData.asbestosExposure);
+          clinicalData.nodule_size = Number(formData.noduleSize);
+          clinicalData.nodule_location = Number(formData.noduleLocation);
+          clinicalData.chest_pain = Number(formData.chestPain);
+          clinicalData.weight_loss = Number(formData.weightLoss);
         } else if (cancerType === "Prostate Cancer") {
           clinicalData.psa_level = Number(formData.psaLevel);
         }
@@ -636,82 +686,423 @@ export default function NewAssessment() {
 
                 {diseaseType === "Cancer" && (
                   <div className="space-y-4 mb-6">
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-5 h-5 text-rose-500" />
+                    {/* Multimodal Breast Cancer Section */}
+                    {cancerType === "Breast Cancer" && (
+                      <div className="p-4 bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl border border-pink-200">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Microscope className="w-5 h-5 text-pink-500" />
                           <label className="text-sm font-semibold text-slate-700">
-                            Medical Images (CT/MRI/X-Ray)
+                            Multimodal Breast Cancer Analysis
                           </label>
+                          <span className="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded-full font-medium">
+                            ResNet-50 + Clinical
+                          </span>
                         </div>
-                        <div className="relative">
-                          <input
-                            type="file"
-                            name="reportFile"
-                            onChange={handleFileChange}
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            accept=".jpg,.jpeg,.png,.dicom,.dcm"
-                            multiple
-                          />
-                          <button
-                            type="button"
-                            className="flex items-center gap-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 uppercase tracking-tighter"
-                          >
-                            <Upload className="w-3.5 h-3.5" />
-                            {formData.reportFile
-                              ? formData.reportFile.name
-                              : "Upload Medical Images"}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="mt-3 p-3 bg-rose-50/30 rounded-lg border border-rose-100">
-                        <p className="text-xs text-rose-700 leading-relaxed">
-                          <strong>AI Image Analysis:</strong> Upload CT scans,
-                          MRI images, or X-rays for automated ResNet-based tumor
-                          detection and classification. Supported formats: JPG,
-                          PNG, DICOM.
-                        </p>
-                      </div>
-                      {formData.reportFile && (
-                        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                            <p className="text-xs font-medium text-blue-700">
-                              ResNet Analysis Processing...
-                            </p>
+
+                        {/* Mammography Image Upload */}
+                        <div className="mb-4">
+                          <div className="relative">
+                            <input
+                              type="file"
+                              name="medicalImageFile"
+                              onChange={handleFileChange}
+                              className="absolute inset-0 opacity-0 cursor-pointer"
+                              accept=".jpg,.jpeg,.png,.dicom,.dcm"
+                            />
+                            <div className="flex items-center justify-between p-3 border-2 border-dashed border-pink-300 rounded-lg hover:border-pink-400 transition-colors">
+                              <div className="flex items-center gap-2">
+                                <Upload className="w-4 h-4 text-pink-500" />
+                                <span className="text-sm text-slate-600">
+                                  {formData.medicalImageFile
+                                    ? formData.medicalImageFile.name
+                                    : "Upload Mammography Image"}
+                                </span>
+                              </div>
+                              <span className="text-xs text-pink-600 font-semibold">
+                                Required for AI Analysis
+                              </span>
+                            </div>
                           </div>
-                          <p className="text-xs text-blue-600 mb-2">
-                            Running deep learning analysis on uploaded medical
-                            image using ResNet-50 architecture trained on
-                            medical imaging datasets.
+                        </div>
+
+                        {/* Clinical Features for Multimodal Analysis */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-slate-700">
+                              Tumor Size (cm)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.1"
+                              name="tumorSize"
+                              value={formData.tumorSize}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1.5 text-sm rounded border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                              placeholder="2.5"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-slate-700">
+                              Lymph Nodes
+                            </label>
+                            <input
+                              type="number"
+                              name="lymphNodes"
+                              value={formData.lymphNodes}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1.5 text-sm rounded border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                              placeholder="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-slate-700">
+                              Grade (1-3)
+                            </label>
+                            <select
+                              name="grade"
+                              value={formData.grade}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1.5 text-sm rounded border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                            >
+                              <option value="1">Grade 1 (Low)</option>
+                              <option value="2">Grade 2 (Moderate)</option>
+                              <option value="3">Grade 3 (High)</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-slate-700">
+                              Stage (1-4)
+                            </label>
+                            <select
+                              name="stage"
+                              value={formData.stage}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1.5 text-sm rounded border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                            >
+                              <option value="1">Stage I</option>
+                              <option value="2">Stage II</option>
+                              <option value="3">Stage III</option>
+                              <option value="4">Stage IV</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-slate-700">
+                              Family History
+                            </label>
+                            <select
+                              name="familyHistory"
+                              value={formData.familyHistory}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1.5 text-sm rounded border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                            >
+                              <option value="0">No</option>
+                              <option value="1">Yes</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-slate-700">
+                              Smoking Years
+                            </label>
+                            <input
+                              type="number"
+                              name="smokingYears"
+                              value={formData.smokingYears}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1.5 text-sm rounded border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                              placeholder="0"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Additional Clinical Features */}
+                        <div className="mt-3 grid grid-cols-3 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-slate-700">
+                              Genetic Markers
+                            </label>
+                            <select
+                              name="geneticMarkers"
+                              value={formData.geneticMarkers || "0"}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1 text-xs rounded border border-pink-200 focus:outline-none focus:ring-1 focus:ring-pink-500/20 focus:border-pink-500"
+                            >
+                              <option value="0">Negative</option>
+                              <option value="1">Positive</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-slate-700">
+                              Menopause Age
+                            </label>
+                            <input
+                              type="number"
+                              name="menopauseAge"
+                              value={formData.menopauseAge || "51"}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1 text-xs rounded border border-pink-200 focus:outline-none focus:ring-1 focus:ring-pink-500/20 focus:border-pink-500"
+                              placeholder="51"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-slate-700">
+                              Multimodal AI
+                            </label>
+                            <div className="flex items-center justify-center h-6 bg-pink-100 rounded text-xs font-semibold text-pink-700">
+                              Image + Clinical
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 p-2 bg-pink-50/50 rounded-lg border border-pink-100">
+                          <p className="text-xs text-pink-700 leading-relaxed">
+                            <strong>Multimodal Analysis:</strong> Combines
+                            ResNet-50 image analysis of mammography with
+                            clinical features for enhanced breast cancer
+                            detection accuracy.
                           </p>
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="bg-white/50 p-2 rounded">
-                              <div className="font-medium text-blue-700">
-                                Expected Analysis:
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Multimodal Lung Cancer Section */}
+                    {cancerType === "Lung Cancer" && (
+                      <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Microscope className="w-5 h-5 text-blue-500" />
+                          <label className="text-sm font-semibold text-slate-700">
+                            Multimodal Lung Cancer Analysis
+                          </label>
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+                            ResNet-50 + Clinical + SHAP
+                          </span>
+                        </div>
+
+                        {/* CT Scan Image Upload - MANDATORY */}
+                        <div className="mb-4">
+                          <div className="relative">
+                            <input
+                              type="file"
+                              name="medicalImageFile"
+                              onChange={handleFileChange}
+                              className="absolute inset-0 opacity-0 cursor-pointer"
+                              accept=".jpg,.jpeg,.png,.dicom,.dcm"
+                              required
+                            />
+                            <div
+                              className={`flex items-center justify-between p-3 border-2 border-dashed rounded-lg transition-colors ${
+                                formData.medicalImageFile
+                                  ? "border-blue-400 bg-blue-50"
+                                  : "border-blue-300 hover:border-blue-400"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Upload className="w-4 h-4 text-blue-500" />
+                                <span className="text-sm text-slate-600">
+                                  {formData.medicalImageFile
+                                    ? formData.medicalImageFile.name
+                                    : "Upload CT Scan Image"}
+                                </span>
                               </div>
-                              <div className="text-blue-600">
-                                • Tumor detection
-                              </div>
-                              <div className="text-blue-600">
-                                • Malignancy assessment
-                              </div>
+                              <span className="text-xs text-blue-600 font-semibold">
+                                REQUIRED
+                              </span>
                             </div>
-                            <div className="bg-white/50 p-2 rounded">
-                              <div className="font-medium text-blue-700">
-                                Combined Result:
-                              </div>
-                              <div className="text-blue-600">
-                                • Clinical + Image fusion
-                              </div>
-                              <div className="text-blue-600">
-                                • Enhanced accuracy
-                              </div>
+                          </div>
+                          {!formData.medicalImageFile && (
+                            <p className="text-xs text-blue-600 mt-1 font-medium">
+                              ⚠️ CT scan image is mandatory for lung cancer
+                              analysis
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Clinical Features for Multimodal Analysis */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-slate-700">
+                              Smoking Years
+                            </label>
+                            <input
+                              type="number"
+                              name="smokingYears"
+                              value={formData.smokingYears}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1.5 text-sm rounded border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              placeholder="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-slate-700">
+                              Pack Years
+                            </label>
+                            <input
+                              type="number"
+                              name="packYears"
+                              value={formData.packYears}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1.5 text-sm rounded border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              placeholder="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-slate-700">
+                              COPD History
+                            </label>
+                            <select
+                              name="copdHistory"
+                              value={formData.copdHistory || "0"}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1.5 text-sm rounded border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            >
+                              <option value="0">No</option>
+                              <option value="1">Yes</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-slate-700">
+                              Asbestos Exposure
+                            </label>
+                            <select
+                              name="asbestosExposure"
+                              value={formData.asbestosExposure || "0"}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1.5 text-sm rounded border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            >
+                              <option value="0">No</option>
+                              <option value="1">Yes</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-slate-700">
+                              Nodule Size (cm)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.1"
+                              name="noduleSize"
+                              value={formData.noduleSize || "1.0"}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1.5 text-sm rounded border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              placeholder="1.0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-slate-700">
+                              Nodule Location
+                            </label>
+                            <select
+                              name="noduleLocation"
+                              value={formData.noduleLocation || "1"}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1.5 text-sm rounded border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            >
+                              <option value="1">Right Upper Lobe</option>
+                              <option value="2">Right Middle Lobe</option>
+                              <option value="3">Right Lower Lobe</option>
+                              <option value="4">Left Upper Lobe</option>
+                              <option value="5">Left Lower Lobe</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Additional Clinical Features */}
+                        <div className="mt-3 grid grid-cols-3 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-slate-700">
+                              Family History
+                            </label>
+                            <select
+                              name="familyHistory"
+                              value={formData.familyHistory || "0"}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1 text-xs rounded border border-blue-200 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500"
+                            >
+                              <option value="0">No</option>
+                              <option value="1">Yes</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-slate-700">
+                              Chest Pain
+                            </label>
+                            <select
+                              name="chestPain"
+                              value={formData.chestPain || "0"}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1 text-xs rounded border border-blue-200 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500"
+                            >
+                              <option value="0">No</option>
+                              <option value="1">Yes</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-slate-700">
+                              Weight Loss
+                            </label>
+                            <select
+                              name="weightLoss"
+                              value={formData.weightLoss || "0"}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1 text-xs rounded border border-blue-200 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500"
+                            >
+                              <option value="0">No</option>
+                              <option value="1">Yes</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 p-2 bg-blue-50/50 rounded-lg border border-blue-100">
+                          <p className="text-xs text-blue-700 leading-relaxed">
+                            <strong>Multimodal Analysis:</strong> Combines
+                            ResNet-50 CT scan analysis with clinical risk
+                            factors and provides SHAP explanations for
+                            interpretable lung cancer detection.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Other Cancer Types - Standard Image Analysis */}
+                    {cancerType !== "Breast Cancer" &&
+                      cancerType !== "Lung Cancer" && (
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                              <FileText className="w-5 h-5 text-rose-500" />
+                              <label className="text-sm font-semibold text-slate-700">
+                                Medical Images (CT/MRI/X-Ray)
+                              </label>
                             </div>
+                            <div className="relative">
+                              <input
+                                type="file"
+                                name="reportFile"
+                                onChange={handleFileChange}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                accept=".jpg,.jpeg,.png,.dicom,.dcm"
+                                multiple
+                              />
+                              <button
+                                type="button"
+                                className="flex items-center gap-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 uppercase tracking-tighter"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                {formData.reportFile
+                                  ? formData.reportFile.name
+                                  : "Upload Medical Images"}
+                              </button>
+                            </div>
+                          </div>
+                          <div className="mt-3 p-3 bg-rose-50/30 rounded-lg border border-rose-100">
+                            <p className="text-xs text-rose-700 leading-relaxed">
+                              <strong>AI Image Analysis:</strong> Upload CT
+                              scans, MRI images, or X-rays for automated
+                              ResNet-based tumor detection and classification.
+                              Supported formats: JPG, PNG, DICOM.
+                            </p>
                           </div>
                         </div>
                       )}
-                    </div>
                   </div>
                 )}
 
@@ -961,6 +1352,7 @@ export default function NewAssessment() {
                               value={formData.smokingYears}
                               onChange={handleChange}
                               className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                              placeholder="0"
                             />
                           </div>
                           <div className="space-y-2">
@@ -973,7 +1365,95 @@ export default function NewAssessment() {
                               value={formData.packYears}
                               onChange={handleChange}
                               className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                              placeholder="0"
                             />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-700">
+                              COPD History
+                            </label>
+                            <select
+                              name="copdHistory"
+                              value={formData.copdHistory || "0"}
+                              onChange={handleChange}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                            >
+                              <option value="0">No</option>
+                              <option value="1">Yes</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-700">
+                              Asbestos Exposure
+                            </label>
+                            <select
+                              name="asbestosExposure"
+                              value={formData.asbestosExposure || "0"}
+                              onChange={handleChange}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                            >
+                              <option value="0">No</option>
+                              <option value="1">Yes</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-700">
+                              Nodule Size (cm)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.1"
+                              name="noduleSize"
+                              value={formData.noduleSize || "1.0"}
+                              onChange={handleChange}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                              placeholder="1.0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-700">
+                              Nodule Location (Lobe)
+                            </label>
+                            <select
+                              name="noduleLocation"
+                              value={formData.noduleLocation || "1"}
+                              onChange={handleChange}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                            >
+                              <option value="1">Right Upper Lobe</option>
+                              <option value="2">Right Middle Lobe</option>
+                              <option value="3">Right Lower Lobe</option>
+                              <option value="4">Left Upper Lobe</option>
+                              <option value="5">Left Lower Lobe</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-700">
+                              Chest Pain
+                            </label>
+                            <select
+                              name="chestPain"
+                              value={formData.chestPain || "0"}
+                              onChange={handleChange}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                            >
+                              <option value="0">No</option>
+                              <option value="1">Yes</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-700">
+                              Weight Loss
+                            </label>
+                            <select
+                              name="weightLoss"
+                              value={formData.weightLoss || "0"}
+                              onChange={handleChange}
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                            >
+                              <option value="0">No</option>
+                              <option value="1">Yes</option>
+                            </select>
                           </div>
                         </>
                       )}

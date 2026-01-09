@@ -70,7 +70,8 @@ export default function PredictionReport() {
     importance: f.importance || 0,
     value: f.value,
     contribution: f.contribution,
-    clinical_meaning: (f as any).clinical_meaning || `${f.feature}: ${f.value}`,
+    clinical_meaning: (f as any).clinical_meaning || 
+      `${f.feature}: ${f.value !== undefined ? f.value : 'N/A'}`,
     shap_value: (f as any).shap_value || 0,
   }));
 
