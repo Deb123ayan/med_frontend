@@ -70,6 +70,10 @@ export default function NewAssessment() {
     noduleLocation: "1",
     chestPain: "0",
     weightLoss: "0",
+    // Colorectal cancer specific features
+    manufacturer: "SIEMENS",
+    studyYear: "2024",
+    seriesYear: "2024",
     // ECG
     ecgInput: "",
     // Medical Images for ResNet Analysis
@@ -167,7 +171,7 @@ export default function NewAssessment() {
                 : cancerType === "Lung Cancer"
                 ? "CT"
                 : cancerType === "Colorectal Cancer"
-                ? "MRI"
+                ? "CT"
                 : cancerType === "Prostate Cancer"
                 ? "MRI"
                 : "Dermoscopy";
@@ -177,9 +181,9 @@ export default function NewAssessment() {
                 : cancerType === "Lung Cancer"
                 ? "lung"
                 : cancerType === "Colorectal Cancer"
-                ? "brain"
+                ? "colon"
                 : cancerType === "Prostate Cancer"
-                ? "brain"
+                ? "prostate"
                 : "skin";
             analysisType = "cancer_detection";
           }
@@ -325,6 +329,13 @@ export default function NewAssessment() {
           clinicalData.nodule_location = Number(formData.noduleLocation);
           clinicalData.chest_pain = Number(formData.chestPain);
           clinicalData.weight_loss = Number(formData.weightLoss);
+        } else if (cancerType === "Colorectal Cancer") {
+          clinicalData.sex = formData.gender;
+          clinicalData.manufacturer = formData.manufacturer;
+          clinicalData.study_year = Number(formData.studyYear);
+          clinicalData.series_year = Number(
+            formData.seriesYear || formData.studyYear
+          );
         } else if (cancerType === "Prostate Cancer") {
           clinicalData.psa_level = Number(formData.psaLevel);
         }
@@ -864,7 +875,80 @@ export default function NewAssessment() {
                       </div>
                     )}
 
-                    {/* Multimodal Lung Cancer Section */}
+                    {/* Multimodal Colorectal Cancer Section */}
+                    {cancerType === "Colorectal Cancer" && (
+                      <div className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl border border-orange-200">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Microscope className="w-5 h-5 text-orange-500" />
+                          <label className="text-sm font-semibold text-slate-700">
+                            Multimodal Colorectal Cancer Analysis
+                          </label>
+                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium">
+                            ResNet-50 + Clinical
+                          </span>
+                        </div>
+
+                        {/* CT Scan Image Upload */}
+                        <div className="mb-4">
+                          <div className="relative">
+                            <input
+                              type="file"
+                              name="medicalImageFile"
+                              onChange={handleFileChange}
+                              className="absolute inset-0 opacity-0 cursor-pointer"
+                              accept=".jpg,.jpeg,.png,.dicom,.dcm"
+                              required
+                            />
+                            <div className="flex items-center justify-between p-3 border-2 border-dashed border-orange-300 rounded-lg hover:border-orange-400 transition-colors">
+                              <div className="flex items-center gap-2">
+                                <Upload className="w-4 h-4 text-orange-500" />
+                                <span className="text-sm text-slate-600">
+                                  {formData.medicalImageFile
+                                    ? formData.medicalImageFile.name
+                                    : "Upload CT Scan Image (Required)"}
+                                </span>
+                              </div>
+                              <span className="text-xs text-orange-600 font-semibold">
+                                Mandatory
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Colorectal Cancer Clinical Features */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-slate-700">
+                              Manufacturer
+                            </label>
+                            <select
+                              name="manufacturer"
+                              value={formData.manufacturer || "SIEMENS"}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1.5 text-sm rounded border border-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                            >
+                              <option value="SIEMENS">SIEMENS</option>
+                              <option value="GE">GE Healthcare</option>
+                              <option value="PHILIPS">Philips</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-slate-700">
+                              Study Year
+                            </label>
+                            <input
+                              type="number"
+                              name="studyYear"
+                              value={formData.studyYear || "2024"}
+                              onChange={handleChange}
+                              className="w-full px-2 py-1.5 text-sm rounded border border-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                              min="2020"
+                              max="2024"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     {cancerType === "Lung Cancer" && (
                       <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
                         <div className="flex items-center gap-3 mb-3">
@@ -1064,7 +1148,7 @@ export default function NewAssessment() {
 
                     {/* Other Cancer Types - Standard Image Analysis */}
                     {cancerType !== "Breast Cancer" &&
-                      cancerType !== "Lung Cancer" && (
+                      cancerType !== "Lung Cancer" && cancerType !== "Colorectal Cancer" && (
                         <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-3">
