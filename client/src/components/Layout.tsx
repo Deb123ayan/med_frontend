@@ -45,7 +45,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Activity className="w-4 h-4" />
           </div>
           <span className="text-base font-bold font-display text-slate-800 tracking-tight">
-            Medi<span className="text-blue-600">Predict</span>
+            Arogya<span className="text-blue-600">-AI</span>
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -92,7 +92,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Activity className="w-5 h-5" />
               </div>
               <span className="text-lg font-bold font-display text-slate-800 tracking-tight">
-                Medi<span className="text-blue-600">Predict</span>
+                Arogya<span className="text-blue-600">-AI</span>
               </span>
             </div>
             
@@ -144,7 +144,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Activity className="w-5 h-5" />
           </div>
           <span className="text-xl font-bold font-display text-slate-800 tracking-tight">
-            Medi<span className="text-blue-600">Predict</span>
+            Arogya<span className="text-blue-600">-AI</span>
           </span>
         </div>
 

@@ -4,187 +4,205 @@ import { useCreatePrediction } from "@/hooks/use-medical";
 import { useLocation } from "wouter";
 import {
   Loader2,
-  Heart,
-  Activity,
   Microscope,
   Upload,
-  FileText,
+  User,
+  FileImage,
+  Activity,
+  ChevronRight,
+  ChevronLeft,
+  Check,
+  AlertCircle,
+  Brain,
+  Heart,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { clsx } from "clsx";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function NewAssessment() {
-  const [diseaseType, setDiseaseType] = useState<
-    "Heart Disease" | "Diabetes" | "Cancer"
-  >("Heart Disease");
+  const diseaseType = "Cancer";
+  const [currentStep, setCurrentStep] = useState(1);
   const [cancerType, setCancerType] = useState<
-    "Breast Cancer" | "Lung Cancer" | "Colorectal Cancer" | "Prostate Cancer"
+    | "Breast Cancer"
+    | "Lung Cancer"
+    | "Colorectal Cancer"
+    | "Prostate Cancer"
+    | "Skin Cancer"
   >("Breast Cancer");
   const [loading, setLoading] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const createPrediction = useCreatePrediction();
-  const isMobile = useIsMobile();
 
   // Form State
   const [formData, setFormData] = useState({
-    // Patient Info
     name: "",
     age: "",
     gender: "Male",
-    // Clinical Data
-    cp: "0",
-    trestbps: "120",
-    chol: "200",
-    fbs: "0",
-    thalach: "150",
-    glucose: "100",
-    bmi: "25",
-    insulin: "80",
-    bloodPressure: "80",
-    // Cancer Data
-    tumorSize: "15",
-    markerX: "0.5",
+    tumorSize: "",
+    markerX: "",
     reportText: "",
-    // Cancer-specific clinical features
-    lymphNodes: "0",
-    grade: "2",
-    stage: "1",
-    erStatus: "1",
-    prStatus: "1",
-    her2Status: "0",
-    menopauseStatus: "0",
-    familyHistory: "0",
-    smokingHistory: "0",
-    smokingYears: "0",
-    packYears: "0",
-    psaLevel: "2.5",
-    // Multimodal breast cancer features
-    geneticMarkers: "0",
-    menopauseAge: "51",
-    // Lung cancer specific features
-    copdHistory: "0",
-    asbestosExposure: "0",
-    noduleSize: "1.0",
-    noduleLocation: "1",
-    chestPain: "0",
-    weightLoss: "0",
-    // Colorectal cancer specific features
-    manufacturer: "SIEMENS",
-    studyYear: "2024",
-    seriesYear: "2024",
-    // ECG
-    ecgInput: "",
-    // Medical Images for ResNet Analysis
+    lymphNodes: "",
+    grade: "",
+    stage: "",
+    erStatus: "",
+    prStatus: "",
+    her2Status: "",
+    menopauseStatus: "",
+    familyHistory: "",
+    smokingHistory: "",
+    smokingYears: "",
+    packYears: "",
+    psaLevel: "",
+    lesionDiameter: "",
+    asymmetry: "",
+    borderIrregularity: "",
+    colorVariation: "",
+    sunExposure: "",
+    skinType: "",
+    geneticMarkers: "",
+    menopauseAge: "",
+    copdHistory: "",
+    asbestosExposure: "",
+    noduleSize: "",
+    noduleLocation: "",
+    chestPain: "",
+    weightLoss: "",
+    manufacturer: "",
+    studyYear: "",
+    seriesYear: "",
     medicalImageFile: null as File | null,
-    medicalImageType: "chest_xray" as
-      | "chest_xray"
-      | "ecg"
-      | "echocardiogram"
-      | "retinal_fundus"
-      | "foot_photo"
-      | "thermal_image"
-      | "cardiac_mri",
-    // Uploaded Documents
     reportFile: null as File | null,
-    ecgFile: null as File | null,
-    // Image data for upload
     imageBase64: "",
     imageMetadata: null as any,
   });
 
+  // Cancer type configurations
+  const cancerConfigs = {
+    "Breast Cancer": {
+      icon: "🎗️",
+      gradient: "from-pink-500 to-rose-500",
+      bgGradient: "from-pink-50 to-rose-50",
+      borderColor: "border-pink-200",
+      scanType: "Mammography/Histopathology",
+      description:
+        "Advanced breast tissue analysis using AI-powered mammography and histopathology interpretation",
+    },
+    "Lung Cancer": {
+      icon: "🫁",
+      gradient: "from-blue-500 to-cyan-500",
+      bgGradient: "from-blue-50 to-cyan-50",
+      borderColor: "border-blue-200",
+      scanType: "CT Scan/X-Ray",
+      description:
+        "Comprehensive lung imaging analysis with nodule detection and risk assessment",
+    },
+    "Colorectal Cancer": {
+      icon: "🩺",
+      gradient: "from-emerald-500 to-teal-500",
+      bgGradient: "from-emerald-50 to-teal-50",
+      borderColor: "border-emerald-200",
+      scanType: "CT/Colonoscopy",
+      description:
+        "Detailed colorectal imaging with polyp detection and staging analysis",
+    },
+    "Prostate Cancer": {
+      icon: "👨‍⚕️",
+      gradient: "from-purple-500 to-indigo-500",
+      bgGradient: "from-purple-50 to-indigo-50",
+      borderColor: "border-purple-200",
+      scanType: "MRI/Biopsy",
+      description:
+        "Precision prostate imaging with PSA correlation and Gleason scoring",
+    },
+    "Skin Cancer": {
+      icon: "🔬",
+      gradient: "from-amber-500 to-orange-500",
+      bgGradient: "from-amber-50 to-orange-50",
+      borderColor: "border-amber-200",
+      scanType: "Dermoscopy",
+      description:
+        "Advanced dermatological analysis using ABCDE criteria and pattern recognition",
+    },
+  };
+
+  const currentConfig = cancerConfigs[cancerType];
+
+  // Step validation
+  const isStepValid = (step: number) => {
+    switch (step) {
+      case 1:
+        return !!(formData.name && formData.age && formData.gender);
+      case 2:
+        return !!(formData.medicalImageFile || formData.imageBase64);
+      case 3:
+        // Make step 3 mandatory - require at least tumor size and family history
+        return !!(formData.tumorSize && formData.familyHistory !== "");
+      default:
+        return false;
+    }
+  };
+
+  const nextStep = () => {
+    if (currentStep < 3 && isStepValid(currentStep)) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    >,
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
     const name = e.target.name;
+    const file = e.target.files?.[0] || null;
+
     if (file) {
       setFormData((prev) => ({ ...prev, [name]: file }));
 
-      // Handle medical image files for ResNet analysis
       if (
         (name === "reportFile" || name === "medicalImageFile") &&
         file.type.startsWith("image/")
       ) {
-        // Convert image to base64 for ResNet analysis
         const reader = new FileReader();
         reader.onload = (event) => {
           const base64Data = event.target?.result as string;
 
-          // Determine scan type based on disease and image type
           let scanType = "Other";
           let bodyPart = "other";
           let analysisType = "general";
 
-          if (diseaseType === "Heart Disease") {
-            switch (formData.medicalImageType) {
-              case "chest_xray":
-                scanType = "X-Ray";
-                bodyPart = "chest";
-                analysisType = "cardiomegaly_detection";
-                break;
-              case "ecg":
-                scanType = "ECG";
-                bodyPart = "heart";
-                analysisType = "arrhythmia_detection";
-                break;
-              case "echocardiogram":
-                scanType = "Echocardiogram";
-                bodyPart = "heart";
-                analysisType = "ejection_fraction";
-                break;
-              case "cardiac_mri":
-                scanType = "MRI";
-                bodyPart = "heart";
-                analysisType = "cardiac_structure";
-                break;
-            }
-          } else if (diseaseType === "Diabetes") {
-            switch (formData.medicalImageType) {
-              case "retinal_fundus":
-                scanType = "Fundus";
-                bodyPart = "eye";
-                analysisType = "diabetic_retinopathy";
-                break;
-              case "foot_photo":
-                scanType = "Other";
-                bodyPart = "foot";
-                analysisType = "diabetic_foot_ulcer";
-                break;
-              case "thermal_image":
-                scanType = "Thermal";
-                bodyPart = "extremities";
-                analysisType = "neuropathy_detection";
-                break;
-            }
-          } else if (diseaseType === "Cancer") {
+          if (diseaseType === "Cancer") {
             scanType =
               cancerType === "Breast Cancer"
                 ? "Histopathology"
                 : cancerType === "Lung Cancer"
-                ? "CT"
-                : cancerType === "Colorectal Cancer"
-                ? "CT"
-                : cancerType === "Prostate Cancer"
-                ? "MRI"
-                : "Dermoscopy";
+                  ? "CT"
+                  : cancerType === "Colorectal Cancer"
+                    ? "CT"
+                    : cancerType === "Prostate Cancer"
+                      ? "MRI"
+                      : "Dermoscopy";
             bodyPart =
               cancerType === "Breast Cancer"
                 ? "breast"
                 : cancerType === "Lung Cancer"
-                ? "lung"
-                : cancerType === "Colorectal Cancer"
-                ? "colon"
-                : cancerType === "Prostate Cancer"
-                ? "prostate"
-                : "skin";
+                  ? "lung"
+                  : cancerType === "Colorectal Cancer"
+                    ? "colon"
+                    : cancerType === "Prostate Cancer"
+                      ? "prostate"
+                      : "skin";
             analysisType = "cancer_detection";
           }
 
@@ -195,8 +213,7 @@ export default function NewAssessment() {
               filename: file.name,
               scanType: scanType,
               bodyPart: bodyPart,
-              description: `${diseaseType} medical image for ResNet analysis - ${formData.medicalImageType}`,
-              imageType: formData.medicalImageType,
+              description: `${diseaseType} medical image for ResNet analysis`,
               analysisType: analysisType,
               disease: diseaseType,
             },
@@ -209,23 +226,24 @@ export default function NewAssessment() {
           description: `${file.name} ready for ResNet analysis`,
         });
       }
-
-      // Handle other file types (reports, ECG data files)
-      if (name === "reportFile" && !file.type.startsWith("image/")) {
-        toast({
-          title: "Report Uploaded",
-          description: `${file.name} uploaded successfully`,
-        });
-      }
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Only allow submission when on step 3
+    if (currentStep !== 3) {
+      console.log(
+        "Form submission blocked - not on step 3, current step:",
+        currentStep,
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Validation for cancer types - image upload is mandatory
       if (diseaseType === "Cancer") {
         if (!formData.medicalImageFile && !formData.imageBase64) {
           toast({
@@ -236,25 +254,8 @@ export default function NewAssessment() {
           setLoading(false);
           return;
         }
-
-        // Additional validation for lung cancer
-        if (
-          cancerType === "Lung Cancer" &&
-          !formData.medicalImageFile &&
-          !formData.imageBase64
-        ) {
-          toast({
-            title: "CT Scan Required",
-            description:
-              "CT scan image is required for lung cancer multimodal analysis with SHAP explanations",
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
       }
 
-      // Handle medical image upload for ResNet analysis
       let medicalImages: any[] = [];
       if (formData.imageBase64 && formData.imageMetadata) {
         medicalImages = [
@@ -273,75 +274,55 @@ export default function NewAssessment() {
         });
       }
 
-      let finalEcgData = formData.ecgInput
-        ? formData.ecgInput.split(",").map(Number)
-        : undefined;
-      if (formData.ecgFile && !finalEcgData) {
-        // Simulate extraction from digital ECG report
-        finalEcgData = [0.1, 0.5, 1.2, 0.8, 0.2];
-        toast({
-          title: "ECG Document Parsed",
-          description: "Automatically extracted signal features from PDF/Image",
-        });
-      }
-
       const clinicalData: Record<string, number | string> = {
         age: Number(formData.age),
       };
 
-      if (diseaseType === "Heart Disease") {
-        clinicalData.sex = formData.gender === "Male" ? 1 : 0;
-        clinicalData.cp = Number(formData.cp);
-        clinicalData.trestbps = Number(formData.trestbps);
-        clinicalData.chol = Number(formData.chol);
-        clinicalData.fbs = Number(formData.fbs);
-        clinicalData.thalach = Number(formData.thalach);
-      } else if (diseaseType === "Diabetes") {
-        clinicalData.glucose = Number(formData.glucose);
-        clinicalData.bmi = Number(formData.bmi);
-        clinicalData.insulin = Number(formData.insulin);
-        clinicalData.bloodPressure = Number(formData.bloodPressure);
-      } else if (diseaseType === "Cancer") {
+      if (diseaseType === "Cancer") {
         clinicalData.cancer_type = cancerType;
-        clinicalData.tumor_size = Number(formData.tumorSize);
-        clinicalData.marker_x = Number(formData.markerX);
+        clinicalData.tumor_size = Number(formData.tumorSize) || 15;
+        clinicalData.marker_x = Number(formData.markerX) || 0.5;
 
-        // Add cancer-specific features based on type
         if (cancerType === "Breast Cancer") {
-          // Multimodal breast cancer features
-          clinicalData.lymph_nodes = Number(formData.lymphNodes);
-          clinicalData.grade = Number(formData.grade);
-          clinicalData.stage = Number(formData.stage);
-          clinicalData.genetic_markers = Number(formData.geneticMarkers);
-          clinicalData.menopause_age = Number(formData.menopauseAge);
-
-          // Legacy features for compatibility
-          clinicalData.er_status = Number(formData.erStatus);
-          clinicalData.pr_status = Number(formData.prStatus);
-          clinicalData.her2_status = Number(formData.her2Status);
-          clinicalData.menopause_status = Number(formData.menopauseStatus);
+          clinicalData.lymph_nodes = Number(formData.lymphNodes) || 0;
+          clinicalData.grade = Number(formData.grade) || 2;
+          clinicalData.stage = Number(formData.stage) || 1;
+          clinicalData.genetic_markers = Number(formData.geneticMarkers) || 0;
+          clinicalData.menopause_age = Number(formData.menopauseAge) || 51;
+          clinicalData.er_status = Number(formData.erStatus) || 1;
+          clinicalData.pr_status = Number(formData.prStatus) || 1;
+          clinicalData.her2_status = Number(formData.her2Status) || 0;
+          clinicalData.menopause_status = Number(formData.menopauseStatus) || 0;
         } else if (cancerType === "Lung Cancer") {
-          clinicalData.smoking_years = Number(formData.smokingYears);
-          clinicalData.pack_years = Number(formData.packYears);
-          clinicalData.copd_history = Number(formData.copdHistory);
-          clinicalData.asbestos_exposure = Number(formData.asbestosExposure);
-          clinicalData.nodule_size = Number(formData.noduleSize);
-          clinicalData.nodule_location = Number(formData.noduleLocation);
-          clinicalData.chest_pain = Number(formData.chestPain);
-          clinicalData.weight_loss = Number(formData.weightLoss);
+          clinicalData.smoking_years = Number(formData.smokingYears) || 0;
+          clinicalData.pack_years = Number(formData.packYears) || 0;
+          clinicalData.copd_history = Number(formData.copdHistory) || 0;
+          clinicalData.asbestos_exposure =
+            Number(formData.asbestosExposure) || 0;
+          clinicalData.nodule_size = Number(formData.noduleSize) || 1.0;
+          clinicalData.nodule_location = Number(formData.noduleLocation) || 1;
+          clinicalData.chest_pain = Number(formData.chestPain) || 0;
+          clinicalData.weight_loss = Number(formData.weightLoss) || 0;
         } else if (cancerType === "Colorectal Cancer") {
           clinicalData.sex = formData.gender;
-          clinicalData.manufacturer = formData.manufacturer;
-          clinicalData.study_year = Number(formData.studyYear);
-          clinicalData.series_year = Number(
-            formData.seriesYear || formData.studyYear
-          );
+          clinicalData.manufacturer = formData.manufacturer || "SIEMENS";
+          clinicalData.study_year = Number(formData.studyYear) || 2024;
+          clinicalData.series_year =
+            Number(formData.seriesYear || formData.studyYear) || 2024;
         } else if (cancerType === "Prostate Cancer") {
-          clinicalData.psa_level = Number(formData.psaLevel);
+          clinicalData.psa_level = Number(formData.psaLevel) || 2.5;
+        } else if (cancerType === "Skin Cancer") {
+          clinicalData.lesion_diameter = Number(formData.lesionDiameter) || 5;
+          clinicalData.asymmetry = Number(formData.asymmetry) || 0;
+          clinicalData.border_irregularity =
+            Number(formData.borderIrregularity) || 0;
+          clinicalData.color_variation = Number(formData.colorVariation) || 0;
+          clinicalData.sun_exposure = Number(formData.sunExposure) || 1;
+          clinicalData.skin_type = Number(formData.skinType) || 2;
         }
 
-        clinicalData.family_history = Number(formData.familyHistory);
-        clinicalData.smoking_history = Number(formData.smokingHistory);
+        clinicalData.family_history = Number(formData.familyHistory) || 0;
+        clinicalData.smoking_history = Number(formData.smokingHistory) || 0;
       }
 
       const result = await createPrediction.mutateAsync({
@@ -352,7 +333,6 @@ export default function NewAssessment() {
           medical_history: [],
         },
         clinical_data: clinicalData as Record<string, number | string>,
-        ecg_data: finalEcgData,
         medical_images: medicalImages,
         disease: diseaseType,
       });
@@ -380,1233 +360,683 @@ export default function NewAssessment() {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto">
-        <header className="mb-4 md:mb-8">
-          <h1 className="text-xl md:text-3xl font-bold text-slate-900">
-            {isMobile ? "New Assessment" : "Multimodal Clinical Assessment"}
-          </h1>
-          <p className="text-slate-500 mt-1 md:mt-2 text-sm md:text-base">
-            {isMobile
-              ? "AI analysis with patient data"
-              : "Input patient vitals, ECG signals, and MRI/Biopsy reports for AI analysis."}
-          </p>
-        </header>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+        {/* Header */}
+        <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
+          <div className="max-w-6xl mx-auto px-4 py-4 md:py-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 flex items-center gap-3">
+                  <div
+                    className={`p-2 rounded-xl bg-gradient-to-r ${currentConfig.gradient} text-white`}
+                  >
+                    <Microscope className="w-5 h-5 md:w-6 md:h-6" />
+                  </div>
+                  AI Cancer Detection
+                </h1>
+                <p className="text-slate-600 mt-1 text-sm md:text-base">
+                  Advanced multimodal analysis combining medical imaging with
+                  clinical data
+                </p>
+              </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
-          {/* Disease Selector */}
-          <div className="lg:col-span-1 space-y-3 md:space-y-4">
-            <div
-              onClick={() => setDiseaseType("Heart Disease")}
-              className={clsx(
-                "p-3 md:p-4 rounded-lg md:rounded-xl border-2 cursor-pointer transition-all duration-200 touch-target",
-                diseaseType === "Heart Disease"
-                  ? "border-blue-500 bg-blue-50/50 ring-2 md:ring-4 ring-blue-500/10"
-                  : "border-slate-200 bg-white hover:border-slate-300"
-              )}
-            >
-              <div className="flex items-center gap-2 md:gap-3">
-                <div
-                  className={clsx(
-                    "p-1.5 md:p-2 rounded-lg",
-                    diseaseType === "Heart Disease"
-                      ? "bg-blue-100 text-blue-600"
-                      : "bg-slate-100 text-slate-500"
-                  )}
-                >
-                  <Heart className="w-4 h-4 md:w-6 md:h-6" />
-                </div>
-                <div className="text-left">
-                  <h3 className="font-semibold text-slate-900 text-sm md:text-base">
-                    Heart Disease
-                  </h3>
-                  <p className="text-xs text-slate-500">Cardiovascular Risk</p>
-                </div>
+              {/* Progress Indicator */}
+              <div className="flex md:hidden items-center gap-2 justify-center">
+                {[1, 2, 3].map((step) => (
+                  <div key={step} className="flex items-center">
+                    <div
+                      className={clsx(
+                        "w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all",
+                        currentStep === step
+                          ? `bg-gradient-to-r ${currentConfig.gradient} text-white shadow-lg`
+                          : currentStep > step
+                            ? "bg-green-500 text-white"
+                            : "bg-slate-200 text-slate-500",
+                      )}
+                    >
+                      {currentStep > step ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        step
+                      )}
+                    </div>
+                    {step < 3 && (
+                      <ChevronRight
+                        className={clsx(
+                          "w-4 h-4 mx-1",
+                          currentStep > step
+                            ? "text-green-500"
+                            : "text-slate-300",
+                        )}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="hidden md:flex items-center gap-4">
+                {[1, 2, 3].map((step) => (
+                  <div key={step} className="flex items-center">
+                    <div
+                      className={clsx(
+                        "w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all",
+                        currentStep === step
+                          ? `bg-gradient-to-r ${currentConfig.gradient} text-white shadow-lg`
+                          : currentStep > step
+                            ? "bg-green-500 text-white"
+                            : "bg-slate-200 text-slate-500",
+                      )}
+                    >
+                      {currentStep > step ? (
+                        <Check className="w-5 h-5" />
+                      ) : (
+                        step
+                      )}
+                    </div>
+                    {step < 3 && (
+                      <ChevronRight
+                        className={clsx(
+                          "w-5 h-5 mx-2",
+                          currentStep > step
+                            ? "text-green-500"
+                            : "text-slate-300",
+                        )}
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
-
-            <div
-              onClick={() => setDiseaseType("Diabetes")}
-              className={clsx(
-                "p-3 md:p-4 rounded-lg md:rounded-xl border-2 cursor-pointer transition-all duration-200 touch-target",
-                diseaseType === "Diabetes"
-                  ? "border-emerald-500 bg-emerald-50/50 ring-2 md:ring-4 ring-emerald-500/10"
-                  : "border-slate-200 bg-white hover:border-slate-300"
-              )}
-            >
-              <div className="flex items-center gap-2 md:gap-3">
-                <div
-                  className={clsx(
-                    "p-1.5 md:p-2 rounded-lg",
-                    diseaseType === "Diabetes"
-                      ? "bg-emerald-100 text-emerald-600"
-                      : "bg-slate-100 text-slate-500"
-                  )}
-                >
-                  <Activity className="w-4 h-4 md:w-6 md:h-6" />
-                </div>
-                <div className="text-left">
-                  <h3 className="font-semibold text-slate-900 text-sm md:text-base">
-                    Diabetes
-                  </h3>
-                  <p className="text-xs text-slate-500">Metabolic Risk</p>
-                </div>
-              </div>
-            </div>
-
-            <div
-              onClick={() => setDiseaseType("Cancer")}
-              className={clsx(
-                "p-3 md:p-4 rounded-lg md:rounded-xl border-2 cursor-pointer transition-all duration-200 touch-target",
-                diseaseType === "Cancer"
-                  ? "border-rose-500 bg-rose-50/50 ring-2 md:ring-4 ring-rose-500/10"
-                  : "border-slate-200 bg-white hover:border-slate-300"
-              )}
-            >
-              <div className="flex items-center gap-2 md:gap-3">
-                <div
-                  className={clsx(
-                    "p-1.5 md:p-2 rounded-lg",
-                    diseaseType === "Cancer"
-                      ? "bg-rose-100 text-rose-600"
-                      : "bg-slate-100 text-slate-500"
-                  )}
-                >
-                  <Microscope className="w-4 h-4 md:w-6 md:h-6" />
-                </div>
-                <div className="text-left">
-                  <h3 className="font-semibold text-slate-900 text-sm md:text-base">
-                    Cancer
-                  </h3>
-                  <p className="text-xs text-slate-500">Oncology Risk</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Cancer Type Selector */}
-            {diseaseType === "Cancer" && (
-              <div className="mt-3 p-3 bg-rose-50/30 rounded-lg border border-rose-100">
-                <label className="text-xs font-bold text-rose-700 uppercase tracking-wider mb-2 block">
-                  Cancer Type
-                </label>
-                <select
-                  value={cancerType}
-                  onChange={(e) => setCancerType(e.target.value as any)}
-                  className="w-full px-2 py-1.5 text-sm rounded border border-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
-                >
-                  <option value="Breast Cancer">Breast Cancer</option>
-                  <option value="Lung Cancer">Lung Cancer</option>
-                  <option value="Colorectal Cancer">Colorectal Cancer</option>
-                  <option value="Prostate Cancer">Prostate Cancer</option>
-                </select>
-              </div>
-            )}
           </div>
+        </div>
 
-          {/* Form */}
-          <div className="lg:col-span-2">
-            <form
-              onSubmit={handleSubmit}
-              className="bg-white rounded-lg md:rounded-2xl border border-slate-200 shadow-sm p-3 md:p-6 space-y-4 md:space-y-6"
-            >
-              {/* Patient Info Section */}
-              <div>
-                <h3 className="text-xs md:text-sm font-bold text-slate-900 uppercase tracking-wider mb-3 md:mb-4 border-b border-slate-100 pb-2">
-                  Patient Details
-                </h3>
-                <div className="grid grid-cols-1 gap-3 md:gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">
-                      Full Name
-                    </label>
-                    <input
-                      required
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2.5 md:py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all touch-target"
-                      placeholder="John Doe"
-                    />
+        <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
+          <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 lg:gap-8">
+            {/* Cancer Type Selector - Top on mobile, Left Sidebar on desktop */}
+            <div className="lg:col-span-3 order-1">
+              <div
+                className={`bg-gradient-to-br ${currentConfig.bgGradient} p-4 md:p-6 rounded-2xl ${currentConfig.borderColor} border-2 lg:sticky lg:top-24`}
+              >
+                <div className="text-center mb-4 md:mb-6">
+                  <div className="text-3xl md:text-4xl mb-2 md:mb-3">
+                    {currentConfig.icon}
                   </div>
-                  <div className="grid grid-cols-2 gap-3 md:gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">
-                        Age
-                      </label>
-                      <input
-                        required
-                        type="number"
-                        name="age"
-                        value={formData.age}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2.5 md:py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all touch-target"
-                        placeholder="45"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">
-                        Gender
-                      </label>
-                      <select
-                        name="gender"
-                        value={formData.gender}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2.5 md:py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all touch-target"
+                  <h3 className="font-bold text-slate-900 text-base md:text-lg">
+                    Cancer Type
+                  </h3>
+                  <p className="text-xs md:text-sm text-slate-600 mt-1">
+                    Select for specialized analysis
+                  </p>
+                </div>
+
+                {/* Mobile: Horizontal scroll, Desktop: Vertical stack */}
+                <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 lg:space-y-0">
+                  {Object.entries(cancerConfigs).map(([type, config]) => (
+                    <button
+                      key={type}
+                      onClick={() => {
+                        // Only allow switching cancer types on step 1
+                        if (currentStep > 1) {
+                          toast({
+                            title: "Cannot Switch Cancer Type",
+                            description:
+                              "Please complete or restart the current analysis to switch cancer types",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        setCancerType(type as typeof cancerType);
+                        if (formData.medicalImageFile || formData.imageBase64) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            medicalImageFile: null,
+                            imageBase64: "",
+                            imageMetadata: null,
+                          }));
+                          toast({
+                            title: "Image Cleared",
+                            description: `Switched to ${type} - please upload appropriate image`,
+                          });
+                        }
+                      }}
+                      disabled={currentStep > 1}
+                      className={clsx(
+                        "flex-shrink-0 lg:w-full p-3 rounded-xl text-left transition-all duration-200 border-2 min-w-[140px] lg:min-w-0",
+                        currentStep > 1
+                          ? "opacity-50 cursor-not-allowed bg-gray-100 border-gray-200"
+                          : cancerType === type
+                            ? `bg-white ${config.borderColor} shadow-md`
+                            : "bg-white/50 border-transparent hover:bg-white/80",
+                      )}
+                    >
+                      <div className="flex items-center gap-2 lg:gap-3">
+                        <span className="text-lg lg:text-xl">
+                          {config.icon}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="font-medium text-slate-900 text-xs lg:text-sm truncate">
+                            {type.replace(" Cancer", "")}
+                          </div>
+                          <div className="text-xs text-slate-500 truncate">
+                            {config.scanType}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Current Selection Info */}
+                <div className="mt-6 p-4 bg-white/60 rounded-xl border border-white/50">
+                  <h4 className="font-semibold text-slate-900 text-sm mb-2">
+                    {cancerType} Analysis
+                  </h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    {currentConfig.description}
+                  </p>
+
+                  {/* Restart Analysis Button */}
+                  {currentStep > 1 && (
+                    <div className="mt-4 pt-3 border-t border-white/50">
+                      <button
+                        onClick={() => {
+                          setCurrentStep(1);
+                          setFormData({
+                            name: "",
+                            age: "",
+                            gender: "Male",
+                            tumorSize: "",
+                            markerX: "",
+                            reportText: "",
+                            lymphNodes: "",
+                            grade: "",
+                            stage: "",
+                            erStatus: "",
+                            prStatus: "",
+                            her2Status: "",
+                            menopauseStatus: "",
+                            familyHistory: "",
+                            smokingHistory: "",
+                            smokingYears: "",
+                            packYears: "",
+                            psaLevel: "",
+                            lesionDiameter: "",
+                            asymmetry: "",
+                            borderIrregularity: "",
+                            colorVariation: "",
+                            sunExposure: "",
+                            skinType: "",
+                            geneticMarkers: "",
+                            menopauseAge: "",
+                            copdHistory: "",
+                            asbestosExposure: "",
+                            noduleSize: "",
+                            noduleLocation: "",
+                            chestPain: "",
+                            weightLoss: "",
+                            manufacturer: "",
+                            studyYear: "",
+                            seriesYear: "",
+                            medicalImageFile: null,
+                            reportFile: null,
+                            imageBase64: "",
+                            imageMetadata: null,
+                          });
+                          toast({
+                            title: "Analysis Restarted",
+                            description:
+                              "You can now select a different cancer type",
+                          });
+                        }}
+                        className="w-full px-3 py-2 text-xs bg-slate-500 text-white rounded-lg hover:bg-slate-600 transition-colors"
                       >
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                      </select>
+                        🔄 Restart Analysis
+                      </button>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
-
-              {/* Multimodal Data Section */}
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
-                  Multimodal Inputs
-                </h3>
-
-                {diseaseType === "Heart Disease" && (
-                  <div className="space-y-4 mb-6">
-                    {/* Medical Image Upload for Heart Disease */}
-                    <div className="p-4 bg-gradient-to-br from-red-50 to-pink-50 rounded-xl border border-red-200">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Microscope className="w-5 h-5 text-red-500" />
-                        <label className="text-sm font-semibold text-slate-700">
-                          Medical Image Analysis (ResNet)
-                        </label>
-                      </div>
-
-                      {/* Image Type Selection */}
-                      <div className="grid grid-cols-2 gap-2 mb-3">
-                        {[
-                          {
-                            value: "chest_xray",
-                            label: "Chest X-Ray",
-                            desc: "Cardiomegaly Detection",
-                          },
-                          {
-                            value: "ecg",
-                            label: "ECG Image",
-                            desc: "Arrhythmia Analysis",
-                          },
-                          {
-                            value: "echocardiogram",
-                            label: "Echocardiogram",
-                            desc: "Ejection Fraction",
-                          },
-                          {
-                            value: "cardiac_mri",
-                            label: "Cardiac MRI/CT",
-                            desc: "Structure Analysis",
-                          },
-                        ].map((type) => (
-                          <button
-                            key={type.value}
-                            type="button"
-                            onClick={() =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                medicalImageType: type.value as any,
-                              }))
-                            }
-                            className={clsx(
-                              "p-2 rounded-lg border text-left transition-all",
-                              formData.medicalImageType === type.value
-                                ? "border-red-500 bg-red-50 text-red-700"
-                                : "border-slate-200 bg-white hover:border-slate-300"
-                            )}
-                          >
-                            <div className="text-xs font-semibold">
-                              {type.label}
-                            </div>
-                            <div className="text-xs text-slate-500">
-                              {type.desc}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Image Upload */}
-                      <div className="relative">
-                        <input
-                          type="file"
-                          name="medicalImageFile"
-                          onChange={handleFileChange}
-                          className="absolute inset-0 opacity-0 cursor-pointer"
-                          accept=".jpg,.jpeg,.png,.dicom,.dcm"
-                        />
-                        <div className="flex items-center justify-between p-3 border-2 border-dashed border-red-300 rounded-lg hover:border-red-400 transition-colors">
-                          <div className="flex items-center gap-2">
-                            <Upload className="w-4 h-4 text-red-500" />
-                            <span className="text-sm text-slate-600">
-                              {formData.medicalImageFile
-                                ? formData.medicalImageFile.name
-                                : `Upload ${formData.medicalImageType.replace(
-                                    "_",
-                                    " "
-                                  )} image`}
-                            </span>
-                          </div>
-                          <span className="text-xs text-red-600 font-semibold">
-                            ResNet Analysis
-                          </span>
+            </div>
+            {/* Main Content Area */}
+            <div className="lg:col-span-9 order-2">
+              <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
+                {/* Step 1: Patient Information */}
+                {currentStep === 1 && (
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-4 md:p-6 text-white">
+                      <div className="flex items-center gap-3 md:gap-4">
+                        <div className="p-2 md:p-3 bg-white/20 rounded-xl">
+                          <User className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                      </div>
-                    </div>
-
-                    {/* ECG Section */}
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <Activity className="w-5 h-5 text-blue-500" />
-                          <label className="text-sm font-semibold text-slate-700">
-                            ECG Signal Data
-                          </label>
-                        </div>
-                        <div className="relative">
-                          <input
-                            type="file"
-                            name="ecgFile"
-                            onChange={handleFileChange}
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            accept=".pdf,.jpg,.png,.csv"
-                          />
-                          <button
-                            type="button"
-                            className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 uppercase tracking-tighter"
-                          >
-                            <Upload className="w-3.5 h-3.5" />
-                            {formData.ecgFile
-                              ? formData.ecgFile.name
-                              : "Upload Digital ECG"}
-                          </button>
-                        </div>
-                      </div>
-                      <textarea
-                        name="ecgInput"
-                        value={formData.ecgInput}
-                        onChange={handleChange}
-                        className="w-full p-3 rounded-lg border border-slate-200 text-xs font-mono h-20"
-                        placeholder="Manual Lead-II Entry (e.g., 0.1, 0.2...)"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {diseaseType === "Cancer" && (
-                  <div className="space-y-4 mb-6">
-                    {/* Multimodal Breast Cancer Section */}
-                    {cancerType === "Breast Cancer" && (
-                      <div className="p-4 bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl border border-pink-200">
-                        <div className="flex items-center gap-3 mb-3">
-                          <Microscope className="w-5 h-5 text-pink-500" />
-                          <label className="text-sm font-semibold text-slate-700">
-                            Multimodal Breast Cancer Analysis
-                          </label>
-                          <span className="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded-full font-medium">
-                            ResNet-50 + Clinical
-                          </span>
-                        </div>
-
-                        {/* Mammography Image Upload */}
-                        <div className="mb-4">
-                          <div className="relative">
-                            <input
-                              type="file"
-                              name="medicalImageFile"
-                              onChange={handleFileChange}
-                              className="absolute inset-0 opacity-0 cursor-pointer"
-                              accept=".jpg,.jpeg,.png,.dicom,.dcm"
-                            />
-                            <div className="flex items-center justify-between p-3 border-2 border-dashed border-pink-300 rounded-lg hover:border-pink-400 transition-colors">
-                              <div className="flex items-center gap-2">
-                                <Upload className="w-4 h-4 text-pink-500" />
-                                <span className="text-sm text-slate-600">
-                                  {formData.medicalImageFile
-                                    ? formData.medicalImageFile.name
-                                    : "Upload Mammography Image"}
-                                </span>
-                              </div>
-                              <span className="text-xs text-pink-600 font-semibold">
-                                Required for AI Analysis
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Clinical Features for Multimodal Analysis */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-slate-700">
-                              Tumor Size (cm)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              name="tumorSize"
-                              value={formData.tumorSize}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1.5 text-sm rounded border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
-                              placeholder="2.5"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-slate-700">
-                              Lymph Nodes
-                            </label>
-                            <input
-                              type="number"
-                              name="lymphNodes"
-                              value={formData.lymphNodes}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1.5 text-sm rounded border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
-                              placeholder="0"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-slate-700">
-                              Grade (1-3)
-                            </label>
-                            <select
-                              name="grade"
-                              value={formData.grade}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1.5 text-sm rounded border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
-                            >
-                              <option value="1">Grade 1 (Low)</option>
-                              <option value="2">Grade 2 (Moderate)</option>
-                              <option value="3">Grade 3 (High)</option>
-                            </select>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-slate-700">
-                              Stage (1-4)
-                            </label>
-                            <select
-                              name="stage"
-                              value={formData.stage}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1.5 text-sm rounded border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
-                            >
-                              <option value="1">Stage I</option>
-                              <option value="2">Stage II</option>
-                              <option value="3">Stage III</option>
-                              <option value="4">Stage IV</option>
-                            </select>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-slate-700">
-                              Family History
-                            </label>
-                            <select
-                              name="familyHistory"
-                              value={formData.familyHistory}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1.5 text-sm rounded border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
-                            >
-                              <option value="0">No</option>
-                              <option value="1">Yes</option>
-                            </select>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-slate-700">
-                              Smoking Years
-                            </label>
-                            <input
-                              type="number"
-                              name="smokingYears"
-                              value={formData.smokingYears}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1.5 text-sm rounded border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
-                              placeholder="0"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Additional Clinical Features */}
-                        <div className="mt-3 grid grid-cols-3 gap-2">
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-700">
-                              Genetic Markers
-                            </label>
-                            <select
-                              name="geneticMarkers"
-                              value={formData.geneticMarkers || "0"}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1 text-xs rounded border border-pink-200 focus:outline-none focus:ring-1 focus:ring-pink-500/20 focus:border-pink-500"
-                            >
-                              <option value="0">Negative</option>
-                              <option value="1">Positive</option>
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-700">
-                              Menopause Age
-                            </label>
-                            <input
-                              type="number"
-                              name="menopauseAge"
-                              value={formData.menopauseAge || "51"}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1 text-xs rounded border border-pink-200 focus:outline-none focus:ring-1 focus:ring-pink-500/20 focus:border-pink-500"
-                              placeholder="51"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-700">
-                              Multimodal AI
-                            </label>
-                            <div className="flex items-center justify-center h-6 bg-pink-100 rounded text-xs font-semibold text-pink-700">
-                              Image + Clinical
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 p-2 bg-pink-50/50 rounded-lg border border-pink-100">
-                          <p className="text-xs text-pink-700 leading-relaxed">
-                            <strong>Multimodal Analysis:</strong> Combines
-                            ResNet-50 image analysis of mammography with
-                            clinical features for enhanced breast cancer
-                            detection accuracy.
+                        <div>
+                          <h2 className="text-lg md:text-xl font-bold">
+                            Patient Information
+                          </h2>
+                          <p className="text-blue-100 text-sm md:text-base">
+                            Basic demographic and contact details
                           </p>
                         </div>
                       </div>
-                    )}
+                    </div>
 
-                    {/* Multimodal Colorectal Cancer Section */}
-                    {cancerType === "Colorectal Cancer" && (
-                      <div className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl border border-orange-200">
-                        <div className="flex items-center gap-3 mb-3">
-                          <Microscope className="w-5 h-5 text-orange-500" />
-                          <label className="text-sm font-semibold text-slate-700">
-                            Multimodal Colorectal Cancer Analysis
+                    <div className="p-4 md:p-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-semibold text-slate-700 mb-2">
+                            Full Name *
                           </label>
-                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium">
-                            ResNet-50 + Clinical
-                          </span>
+                          <input
+                            required
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            className="w-full px-3 md:px-4 py-2 md:py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none transition-colors text-base md:text-lg"
+                            placeholder="Enter patient's full name"
+                          />
                         </div>
 
-                        {/* CT Scan Image Upload */}
-                        <div className="mb-4">
-                          <div className="relative">
-                            <input
-                              type="file"
-                              name="medicalImageFile"
-                              onChange={handleFileChange}
-                              className="absolute inset-0 opacity-0 cursor-pointer"
-                              accept=".jpg,.jpeg,.png,.dicom,.dcm"
-                              required
-                            />
-                            <div className="flex items-center justify-between p-3 border-2 border-dashed border-orange-300 rounded-lg hover:border-orange-400 transition-colors">
-                              <div className="flex items-center gap-2">
-                                <Upload className="w-4 h-4 text-orange-500" />
-                                <span className="text-sm text-slate-600">
-                                  {formData.medicalImageFile
-                                    ? formData.medicalImageFile.name
-                                    : "Upload CT Scan Image (Required)"}
-                                </span>
-                              </div>
-                              <span className="text-xs text-orange-600 font-semibold">
-                                Mandatory
-                              </span>
-                            </div>
-                          </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-slate-700 mb-2">
+                            Age *
+                          </label>
+                          <input
+                            required
+                            type="number"
+                            name="age"
+                            value={formData.age}
+                            onChange={handleChange}
+                            className="w-full px-3 md:px-4 py-2 md:py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none transition-colors text-base md:text-lg"
+                            placeholder="Age in years"
+                            min="1"
+                            max="120"
+                          />
                         </div>
 
-                        {/* Colorectal Cancer Clinical Features */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-slate-700">
-                              Manufacturer
-                            </label>
-                            <select
-                              name="manufacturer"
-                              value={formData.manufacturer || "SIEMENS"}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1.5 text-sm rounded border border-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                            >
-                              <option value="SIEMENS">SIEMENS</option>
-                              <option value="GE">GE Healthcare</option>
-                              <option value="PHILIPS">Philips</option>
-                            </select>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-slate-700">
-                              Study Year
-                            </label>
-                            <input
-                              type="number"
-                              name="studyYear"
-                              value={formData.studyYear || "2024"}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1.5 text-sm rounded border border-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                              min="2020"
-                              max="2024"
-                            />
-                          </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-slate-700 mb-2">
+                            Gender *
+                          </label>
+                          <select
+                            name="gender"
+                            value={formData.gender}
+                            onChange={handleChange}
+                            className="w-full px-3 md:px-4 py-2 md:py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none transition-colors text-base md:text-lg"
+                          >
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                          </select>
                         </div>
                       </div>
-                    )}
-                    {cancerType === "Lung Cancer" && (
-                      <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
-                        <div className="flex items-center gap-3 mb-3">
-                          <Microscope className="w-5 h-5 text-blue-500" />
-                          <label className="text-sm font-semibold text-slate-700">
-                            Multimodal Lung Cancer Analysis
-                          </label>
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
-                            ResNet-50 + Clinical + SHAP
-                          </span>
-                        </div>
 
-                        {/* CT Scan Image Upload - MANDATORY */}
-                        <div className="mb-4">
-                          <div className="relative">
-                            <input
-                              type="file"
-                              name="medicalImageFile"
-                              onChange={handleFileChange}
-                              className="absolute inset-0 opacity-0 cursor-pointer"
-                              accept=".jpg,.jpeg,.png,.dicom,.dcm"
-                              required
-                            />
-                            <div
-                              className={`flex items-center justify-between p-3 border-2 border-dashed rounded-lg transition-colors ${
-                                formData.medicalImageFile
-                                  ? "border-blue-400 bg-blue-50"
-                                  : "border-blue-300 hover:border-blue-400"
-                              }`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <Upload className="w-4 h-4 text-blue-500" />
-                                <span className="text-sm text-slate-600">
-                                  {formData.medicalImageFile
-                                    ? formData.medicalImageFile.name
-                                    : "Upload CT Scan Image"}
-                                </span>
-                              </div>
-                              <span className="text-xs text-blue-600 font-semibold">
-                                REQUIRED
+                      {/* Validation Status */}
+                      <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                        <div className="flex items-center gap-3">
+                          {isStepValid(1) ? (
+                            <>
+                              <Check className="w-5 h-5 text-green-500" />
+                              <span className="text-sm font-medium text-green-700">
+                                Patient information complete
                               </span>
-                            </div>
-                          </div>
-                          {!formData.medicalImageFile && (
-                            <p className="text-xs text-blue-600 mt-1 font-medium">
-                              ⚠️ CT scan image is mandatory for lung cancer
-                              analysis
-                            </p>
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="w-5 h-5 text-amber-500" />
+                              <span className="text-sm font-medium text-amber-700">
+                                Please fill in all required fields
+                              </span>
+                            </>
                           )}
                         </div>
-
-                        {/* Clinical Features for Multimodal Analysis */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-slate-700">
-                              Smoking Years
-                            </label>
-                            <input
-                              type="number"
-                              name="smokingYears"
-                              value={formData.smokingYears}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1.5 text-sm rounded border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                              placeholder="0"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-slate-700">
-                              Pack Years
-                            </label>
-                            <input
-                              type="number"
-                              name="packYears"
-                              value={formData.packYears}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1.5 text-sm rounded border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                              placeholder="0"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-slate-700">
-                              COPD History
-                            </label>
-                            <select
-                              name="copdHistory"
-                              value={formData.copdHistory || "0"}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1.5 text-sm rounded border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                            >
-                              <option value="0">No</option>
-                              <option value="1">Yes</option>
-                            </select>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-slate-700">
-                              Asbestos Exposure
-                            </label>
-                            <select
-                              name="asbestosExposure"
-                              value={formData.asbestosExposure || "0"}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1.5 text-sm rounded border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                            >
-                              <option value="0">No</option>
-                              <option value="1">Yes</option>
-                            </select>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-slate-700">
-                              Nodule Size (cm)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              name="noduleSize"
-                              value={formData.noduleSize || "1.0"}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1.5 text-sm rounded border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                              placeholder="1.0"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-slate-700">
-                              Nodule Location
-                            </label>
-                            <select
-                              name="noduleLocation"
-                              value={formData.noduleLocation || "1"}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1.5 text-sm rounded border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                            >
-                              <option value="1">Right Upper Lobe</option>
-                              <option value="2">Right Middle Lobe</option>
-                              <option value="3">Right Lower Lobe</option>
-                              <option value="4">Left Upper Lobe</option>
-                              <option value="5">Left Lower Lobe</option>
-                            </select>
-                          </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {/* Step 2: Medical Image Upload */}
+                {currentStep === 2 && (
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div
+                      className={`bg-gradient-to-r ${currentConfig.gradient} p-6 text-white`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-white/20 rounded-xl">
+                          <FileImage className="w-6 h-6" />
                         </div>
-
-                        {/* Additional Clinical Features */}
-                        <div className="mt-3 grid grid-cols-3 gap-2">
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-700">
-                              Family History
-                            </label>
-                            <select
-                              name="familyHistory"
-                              value={formData.familyHistory || "0"}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1 text-xs rounded border border-blue-200 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500"
-                            >
-                              <option value="0">No</option>
-                              <option value="1">Yes</option>
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-700">
-                              Chest Pain
-                            </label>
-                            <select
-                              name="chestPain"
-                              value={formData.chestPain || "0"}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1 text-xs rounded border border-blue-200 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500"
-                            >
-                              <option value="0">No</option>
-                              <option value="1">Yes</option>
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-700">
-                              Weight Loss
-                            </label>
-                            <select
-                              name="weightLoss"
-                              value={formData.weightLoss || "0"}
-                              onChange={handleChange}
-                              className="w-full px-2 py-1 text-xs rounded border border-blue-200 focus:outline-none focus:ring-1 focus:ring-blue-500/20 focus:border-blue-500"
-                            >
-                              <option value="0">No</option>
-                              <option value="1">Yes</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 p-2 bg-blue-50/50 rounded-lg border border-blue-100">
-                          <p className="text-xs text-blue-700 leading-relaxed">
-                            <strong>Multimodal Analysis:</strong> Combines
-                            ResNet-50 CT scan analysis with clinical risk
-                            factors and provides SHAP explanations for
-                            interpretable lung cancer detection.
+                        <div>
+                          <h2 className="text-xl font-bold">
+                            Medical Image Analysis
+                          </h2>
+                          <p className="text-white/90">
+                            Upload {currentConfig.scanType} for AI analysis
                           </p>
                         </div>
                       </div>
-                    )}
-
-                    {/* Other Cancer Types - Standard Image Analysis */}
-                    {cancerType !== "Breast Cancer" &&
-                      cancerType !== "Lung Cancer" && cancerType !== "Colorectal Cancer" && (
-                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-3">
-                              <FileText className="w-5 h-5 text-rose-500" />
-                              <label className="text-sm font-semibold text-slate-700">
-                                Medical Images (CT/MRI/X-Ray)
-                              </label>
-                            </div>
-                            <div className="relative">
-                              <input
-                                type="file"
-                                name="reportFile"
-                                onChange={handleFileChange}
-                                className="absolute inset-0 opacity-0 cursor-pointer"
-                                accept=".jpg,.jpeg,.png,.dicom,.dcm"
-                                multiple
-                              />
-                              <button
-                                type="button"
-                                className="flex items-center gap-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 uppercase tracking-tighter"
-                              >
-                                <Upload className="w-3.5 h-3.5" />
-                                {formData.reportFile
-                                  ? formData.reportFile.name
-                                  : "Upload Medical Images"}
-                              </button>
-                            </div>
-                          </div>
-                          <div className="mt-3 p-3 bg-rose-50/30 rounded-lg border border-rose-100">
-                            <p className="text-xs text-rose-700 leading-relaxed">
-                              <strong>AI Image Analysis:</strong> Upload CT
-                              scans, MRI images, or X-rays for automated
-                              ResNet-based tumor detection and classification.
-                              Supported formats: JPG, PNG, DICOM.
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                  </div>
-                )}
-
-                {/* Clinical Data Section */}
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">
-                  Tabular Clinical Metrics
-                </h3>
-
-                {diseaseType === "Heart Disease" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">
-                        Chest Pain Type (CP)
-                      </label>
-                      <select
-                        name="cp"
-                        value={formData.cp}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                      >
-                        <option value="0">Typical Angina</option>
-                        <option value="1">Atypical Angina</option>
-                        <option value="2">Non-anginal Pain</option>
-                        <option value="3">Asymptomatic</option>
-                      </select>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">
-                        Resting BP (mm Hg)
-                      </label>
-                      <input
-                        type="number"
-                        name="trestbps"
-                        value={formData.trestbps}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">
-                        Cholesterol (mg/dl)
-                      </label>
-                      <input
-                        type="number"
-                        name="chol"
-                        value={formData.chol}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">
-                        Max Heart Rate
-                      </label>
-                      <input
-                        type="number"
-                        name="thalach"
-                        value={formData.thalach}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                      />
-                    </div>
-                  </div>
-                ) : diseaseType === "Diabetes" ? (
-                  <div className="space-y-4">
-                    {/* Medical Image Upload for Diabetes */}
-                    <div className="p-4 bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl border border-emerald-200 mb-4">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Microscope className="w-5 h-5 text-emerald-500" />
-                        <label className="text-sm font-semibold text-slate-700">
-                          Medical Image Analysis (ResNet)
-                        </label>
-                      </div>
 
-                      {/* Image Type Selection */}
-                      <div className="grid grid-cols-1 gap-2 mb-3">
-                        {[
-                          {
-                            value: "retinal_fundus",
-                            label: "Retinal Fundus Photo",
-                            desc: "Diabetic Retinopathy Detection",
-                          },
-                          {
-                            value: "foot_photo",
-                            label: "Foot Photography",
-                            desc: "Diabetic Foot Ulcer Assessment",
-                          },
-                          {
-                            value: "thermal_image",
-                            label: "Thermal Imaging",
-                            desc: "Neuropathy Detection",
-                          },
-                        ].map((type) => (
-                          <button
-                            key={type.value}
-                            type="button"
-                            onClick={() =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                medicalImageType: type.value as any,
-                              }))
-                            }
-                            className={clsx(
-                              "p-3 rounded-lg border text-left transition-all",
-                              formData.medicalImageType === type.value
-                                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                                : "border-slate-200 bg-white hover:border-slate-300"
-                            )}
-                          >
-                            <div className="text-sm font-semibold">
-                              {type.label}
-                            </div>
-                            <div className="text-xs text-slate-500">
-                              {type.desc}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Image Upload */}
+                    <div className="p-8">
+                      {/* Upload Area */}
                       <div className="relative">
                         <input
                           type="file"
                           name="medicalImageFile"
                           onChange={handleFileChange}
-                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          className="absolute inset-0 opacity-0 cursor-pointer z-10"
                           accept=".jpg,.jpeg,.png,.dicom,.dcm"
                         />
-                        <div className="flex items-center justify-between p-3 border-2 border-dashed border-emerald-300 rounded-lg hover:border-emerald-400 transition-colors">
-                          <div className="flex items-center gap-2">
-                            <Upload className="w-4 h-4 text-emerald-500" />
-                            <span className="text-sm text-slate-600">
-                              {formData.medicalImageFile
-                                ? formData.medicalImageFile.name
-                                : `Upload ${formData.medicalImageType.replace(
-                                    "_",
-                                    " "
-                                  )} image`}
-                            </span>
-                          </div>
-                          <span className="text-xs text-emerald-600 font-semibold">
-                            ResNet Analysis
-                          </span>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Clinical Data */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">
-                          Glucose Level
-                        </label>
-                        <input
-                          type="number"
-                          name="glucose"
-                          value={formData.glucose}
-                          onChange={handleChange}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">
-                          BMI
-                        </label>
-                        <input
-                          type="number"
-                          name="bmi"
-                          value={formData.bmi}
-                          onChange={handleChange}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">
-                          Tumor Size (mm)
-                        </label>
-                        <input
-                          type="number"
-                          name="tumorSize"
-                          value={formData.tumorSize}
-                          onChange={handleChange}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                        />
-                      </div>
-
-                      {cancerType === "Breast Cancer" && (
-                        <>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-700">
-                              Lymph Nodes Affected
-                            </label>
-                            <input
-                              type="number"
-                              name="lymphNodes"
-                              value={formData.lymphNodes}
-                              onChange={handleChange}
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-700">
-                              Tumor Grade (1-3)
-                            </label>
-                            <select
-                              name="grade"
-                              value={formData.grade}
-                              onChange={handleChange}
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                            >
-                              <option value="1">Grade 1 (Low)</option>
-                              <option value="2">Grade 2 (Intermediate)</option>
-                              <option value="3">Grade 3 (High)</option>
-                            </select>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-700">
-                              ER Status
-                            </label>
-                            <select
-                              name="erStatus"
-                              value={formData.erStatus}
-                              onChange={handleChange}
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                            >
-                              <option value="1">Positive</option>
-                              <option value="0">Negative</option>
-                            </select>
-                          </div>
-                        </>
-                      )}
-
-                      {cancerType === "Lung Cancer" && (
-                        <>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-700">
-                              Smoking Years
-                            </label>
-                            <input
-                              type="number"
-                              name="smokingYears"
-                              value={formData.smokingYears}
-                              onChange={handleChange}
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                              placeholder="0"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-700">
-                              Pack Years
-                            </label>
-                            <input
-                              type="number"
-                              name="packYears"
-                              value={formData.packYears}
-                              onChange={handleChange}
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                              placeholder="0"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-700">
-                              COPD History
-                            </label>
-                            <select
-                              name="copdHistory"
-                              value={formData.copdHistory || "0"}
-                              onChange={handleChange}
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                            >
-                              <option value="0">No</option>
-                              <option value="1">Yes</option>
-                            </select>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-700">
-                              Asbestos Exposure
-                            </label>
-                            <select
-                              name="asbestosExposure"
-                              value={formData.asbestosExposure || "0"}
-                              onChange={handleChange}
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                            >
-                              <option value="0">No</option>
-                              <option value="1">Yes</option>
-                            </select>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-700">
-                              Nodule Size (cm)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              name="noduleSize"
-                              value={formData.noduleSize || "1.0"}
-                              onChange={handleChange}
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                              placeholder="1.0"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-700">
-                              Nodule Location (Lobe)
-                            </label>
-                            <select
-                              name="noduleLocation"
-                              value={formData.noduleLocation || "1"}
-                              onChange={handleChange}
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                            >
-                              <option value="1">Right Upper Lobe</option>
-                              <option value="2">Right Middle Lobe</option>
-                              <option value="3">Right Lower Lobe</option>
-                              <option value="4">Left Upper Lobe</option>
-                              <option value="5">Left Lower Lobe</option>
-                            </select>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-700">
-                              Chest Pain
-                            </label>
-                            <select
-                              name="chestPain"
-                              value={formData.chestPain || "0"}
-                              onChange={handleChange}
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                            >
-                              <option value="0">No</option>
-                              <option value="1">Yes</option>
-                            </select>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-700">
-                              Weight Loss
-                            </label>
-                            <select
-                              name="weightLoss"
-                              value={formData.weightLoss || "0"}
-                              onChange={handleChange}
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                            >
-                              <option value="0">No</option>
-                              <option value="1">Yes</option>
-                            </select>
-                          </div>
-                        </>
-                      )}
-
-                      {cancerType === "Prostate Cancer" && (
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-slate-700">
-                            PSA Level (ng/mL)
-                          </label>
-                          <input
-                            type="number"
-                            step="0.1"
-                            name="psaLevel"
-                            value={formData.psaLevel}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
-                          />
-                        </div>
-                      )}
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">
-                          Family History
-                        </label>
-                        <select
-                          name="familyHistory"
-                          value={formData.familyHistory}
-                          onChange={handleChange}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                        <div
+                          className={clsx(
+                            "border-3 border-dashed rounded-2xl p-8 text-center transition-all duration-200",
+                            formData.medicalImageFile || formData.imageBase64
+                              ? "border-green-300 bg-green-50"
+                              : "border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-slate-100",
+                          )}
                         >
-                          <option value="0">No</option>
-                          <option value="1">Yes</option>
-                        </select>
+                          {formData.medicalImageFile || formData.imageBase64 ? (
+                            <div className="space-y-4">
+                              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto">
+                                <Check className="w-8 h-8 text-white" />
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-semibold text-green-700">
+                                  Image Ready for Analysis
+                                </h3>
+                                <p className="text-green-600">
+                                  {formData.medicalImageFile?.name ||
+                                    "Medical image uploaded"}
+                                </p>
+                                <p className="text-sm text-green-500 mt-2">
+                                  ResNet-50 AI model will analyze this image for{" "}
+                                  {cancerType.toLowerCase()} detection
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mx-auto">
+                                <Upload className="w-8 h-8 text-slate-500" />
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-semibold text-slate-700">
+                                  Upload {currentConfig.scanType} Image
+                                </h3>
+                                <p className="text-slate-500">
+                                  Drag and drop or click to select medical
+                                  images
+                                </p>
+                                <p className="text-sm text-slate-400 mt-2">
+                                  Supported formats: JPG, PNG, DICOM • Max size:
+                                  10MB
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* AI Analysis Info */}
+                      <div className="mt-6 p-6 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200">
+                        <div className="flex items-start gap-4">
+                          <div className="p-2 bg-slate-200 rounded-lg">
+                            <Brain className="w-5 h-5 text-slate-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-slate-900 mb-2">
+                              AI-Powered Analysis
+                            </h4>
+                            <ul className="text-sm text-slate-600 space-y-1">
+                              <li>• ResNet-50 deep learning architecture</li>
+                              <li>• Trained on thousands of medical images</li>
+                              <li>
+                                • Provides confidence scores and explanations
+                              </li>
+                              <li>
+                                • Combines with clinical data for comprehensive
+                                assessment
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Validation Status */}
+                      <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                        <div className="flex items-center gap-3">
+                          {isStepValid(2) ? (
+                            <>
+                              <Check className="w-5 h-5 text-green-500" />
+                              <span className="text-sm font-medium text-green-700">
+                                Medical image uploaded and ready for analysis
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="w-5 h-5 text-amber-500" />
+                              <span className="text-sm font-medium text-amber-700">
+                                Medical image upload is required for{" "}
+                                {cancerType.toLowerCase()} analysis
+                              </span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
                 )}
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-2 md:pt-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={clsx(
-                    "w-full py-3.5 md:py-3.5 rounded-lg md:rounded-xl font-bold text-white shadow-lg transition-all duration-200 transform active:scale-[0.98] touch-target",
-                    diseaseType === "Heart Disease"
-                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-blue-500/25"
-                      : diseaseType === "Diabetes"
-                      ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:shadow-emerald-500/25"
-                      : "bg-gradient-to-r from-rose-600 to-pink-600 hover:shadow-rose-500/25",
-                    loading && "opacity-70 cursor-wait"
-                  )}
-                >
-                  {loading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      {isMobile
-                        ? "Analyzing..."
-                        : "Multimodal Fusion Analysis..."}
+                {/* Step 3: Clinical Parameters */}
+                {currentStep === 3 && (
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-6 text-white">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-white/20 rounded-xl">
+                          <Activity className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h2 className="text-xl font-bold">
+                            Clinical Parameters
+                          </h2>
+                          <p className="text-emerald-100">
+                            Additional data to enhance AI accuracy
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  ) : isMobile ? (
-                    "Run AI Analysis"
-                  ) : (
-                    "Run Integrated AI Diagnostics"
-                  )}
-                </button>
-              </div>
-            </form>
+
+                    <div className="p-8 space-y-6">
+                      {/* Basic Clinical Data */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-semibold text-slate-700 mb-2">
+                            Tumor Size (mm)
+                          </label>
+                          <input
+                            required
+                            type="number"
+                            name="tumorSize"
+                            value={formData.tumorSize}
+                            onChange={handleChange}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-emerald-500 focus:outline-none transition-colors"
+                            placeholder="15"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-semibold text-slate-700 mb-2">
+                            Family History
+                          </label>
+                          <select
+                            name="familyHistory"
+                            value={formData.familyHistory}
+                            onChange={handleChange}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-emerald-500 focus:outline-none transition-colors"
+                          >
+                            <option value="">Select family history</option>
+                            <option value="0">No family history</option>
+                            <option value="1">Family history present</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Cancer-Specific Parameters */}
+                      {cancerType === "Breast Cancer" && (
+                        <div className="p-6 bg-pink-50 rounded-xl border border-pink-200">
+                          <h4 className="font-semibold text-pink-700 mb-4 flex items-center gap-2">
+                            <Heart className="w-5 h-5" />
+                            Breast Cancer Specific Parameters
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">
+                                Lymph Nodes Affected
+                              </label>
+                              <input
+                                type="number"
+                                name="lymphNodes"
+                                value={formData.lymphNodes}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-pink-200 focus:border-pink-500 focus:outline-none"
+                                placeholder="0"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">
+                                Tumor Grade
+                              </label>
+                              <select
+                                name="grade"
+                                value={formData.grade}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-pink-200 focus:border-pink-500 focus:outline-none"
+                              >
+                                <option value="">Select grade</option>
+                                <option value="1">Grade 1 (Low grade)</option>
+                                <option value="2">
+                                  Grade 2 (Intermediate)
+                                </option>
+                                <option value="3">Grade 3 (High grade)</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                        <div className="flex items-center gap-3">
+                          {isStepValid(3) ? (
+                            <>
+                              <Check className="w-5 h-5 text-green-500" />
+                              <span className="text-sm font-medium text-green-700">
+                                Clinical parameters complete - ready for AI
+                                analysis
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="w-5 h-5 text-amber-500" />
+                              <span className="text-sm font-medium text-amber-700">
+                                Please fill in tumor size and family history to
+                                continue
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {/* Navigation and Submit */}
+                <div className="flex flex-col sm:flex-row items-center justify-between bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200 gap-4 sm:gap-0">
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    disabled={currentStep === 1}
+                    className={clsx(
+                      "flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 rounded-xl font-semibold transition-all text-sm md:text-base",
+                      currentStep === 1
+                        ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                        : "bg-slate-200 text-slate-700 hover:bg-slate-300",
+                    )}
+                  >
+                    <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
+                    Previous
+                  </button>
+
+                  <div className="flex items-center gap-3 md:gap-4">
+                    {/* Step Indicator for Mobile */}
+                    <div className="flex sm:hidden items-center gap-2">
+                      {[1, 2, 3].map((step) => (
+                        <div
+                          key={step}
+                          className={clsx(
+                            "w-3 h-3 rounded-full",
+                            currentStep === step
+                              ? `bg-gradient-to-r ${currentConfig.gradient}`
+                              : currentStep > step
+                                ? "bg-green-500"
+                                : "bg-slate-300",
+                          )}
+                        />
+                      ))}
+                    </div>
+
+                    {currentStep < 3 ? (
+                      <button
+                        type="button"
+                        onClick={nextStep}
+                        disabled={!isStepValid(currentStep)}
+                        className={clsx(
+                          "flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 rounded-xl font-semibold transition-all text-sm md:text-base",
+                          isStepValid(currentStep)
+                            ? `bg-gradient-to-r ${currentConfig.gradient} text-white hover:shadow-lg`
+                            : "bg-slate-200 text-slate-400 cursor-not-allowed",
+                        )}
+                      >
+                        Next
+                        <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={
+                          loading ||
+                          !isStepValid(1) ||
+                          !isStepValid(2) ||
+                          !isStepValid(3)
+                        }
+                        className={clsx(
+                          "flex items-center gap-2 md:gap-3 px-4 md:px-8 py-3 md:py-4 rounded-xl font-bold text-white transition-all text-sm md:text-lg",
+                          loading ||
+                            !isStepValid(1) ||
+                            !isStepValid(2) ||
+                            !isStepValid(3)
+                            ? "bg-slate-400 cursor-not-allowed"
+                            : `bg-gradient-to-r ${currentConfig.gradient} hover:shadow-xl active:scale-95`,
+                        )}
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin" />
+                            <span className="hidden sm:inline">
+                              Analyzing with AI...
+                            </span>
+                            <span className="sm:hidden">Analyzing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Microscope className="w-5 h-5 md:w-6 md:h-6" />
+                            <span className="hidden sm:inline">
+                              Generate AI Assessment
+                            </span>
+                            <span className="sm:hidden">Generate</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </div>
