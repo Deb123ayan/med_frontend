@@ -28,6 +28,7 @@ export default function NewAssessment() {
     | "Colorectal Cancer"
     | "Prostate Cancer"
     | "Skin Cancer"
+    | "Brain Cancer"
   >("Breast Cancer");
   const [loading, setLoading] = useState(false);
   const [, setLocation] = useLocation();
@@ -71,6 +72,17 @@ export default function NewAssessment() {
     manufacturer: "",
     studyYear: "",
     seriesYear: "",
+    // Brain Cancer specific fields
+    headaches: "",
+    seizures: "",
+    visionProblems: "",
+    speechProblems: "",
+    memoryIssues: "",
+    motorWeakness: "",
+    radiationExposure: "",
+    tumorLocation: "",
+    symptomDuration: "",
+    kpsScore: "",
     medicalImageFile: null as File | null,
     reportFile: null as File | null,
     imageBase64: "",
@@ -123,6 +135,15 @@ export default function NewAssessment() {
       scanType: "Dermoscopy",
       description:
         "Advanced dermatological analysis using ABCDE criteria and pattern recognition",
+    },
+    "Brain Cancer": {
+      icon: "🧠",
+      gradient: "from-violet-500 to-purple-500",
+      bgGradient: "from-violet-50 to-purple-50",
+      borderColor: "border-violet-200",
+      scanType: "MRI/CT Scan",
+      description:
+        "Comprehensive brain tumor analysis using MRI imaging with clinical symptom correlation",
     },
   };
 
@@ -192,7 +213,9 @@ export default function NewAssessment() {
                     ? "CT"
                     : cancerType === "Prostate Cancer"
                       ? "MRI"
-                      : "Dermoscopy";
+                      : cancerType === "Brain Cancer"
+                        ? "MRI"
+                        : "Dermoscopy";
             bodyPart =
               cancerType === "Breast Cancer"
                 ? "breast"
@@ -202,7 +225,9 @@ export default function NewAssessment() {
                     ? "colon"
                     : cancerType === "Prostate Cancer"
                       ? "prostate"
-                      : "skin";
+                      : cancerType === "Brain Cancer"
+                        ? "brain"
+                        : "skin";
             analysisType = "cancer_detection";
           }
 
@@ -319,6 +344,17 @@ export default function NewAssessment() {
           clinicalData.color_variation = Number(formData.colorVariation) || 0;
           clinicalData.sun_exposure = Number(formData.sunExposure) || 1;
           clinicalData.skin_type = Number(formData.skinType) || 2;
+        } else if (cancerType === "Brain Cancer") {
+          clinicalData.headaches = Number(formData.headaches) || 0;
+          clinicalData.seizures = Number(formData.seizures) || 0;
+          clinicalData.vision_problems = Number(formData.visionProblems) || 0;
+          clinicalData.speech_problems = Number(formData.speechProblems) || 0;
+          clinicalData.memory_issues = Number(formData.memoryIssues) || 0;
+          clinicalData.motor_weakness = Number(formData.motorWeakness) || 0;
+          clinicalData.radiation_exposure = Number(formData.radiationExposure) || 0;
+          clinicalData.tumor_location = Number(formData.tumorLocation) || 1;
+          clinicalData.symptom_duration = Number(formData.symptomDuration) || 1;
+          clinicalData.kps_score = Number(formData.kpsScore) || 90;
         }
 
         clinicalData.family_history = Number(formData.familyHistory) || 0;
@@ -578,6 +614,17 @@ export default function NewAssessment() {
                             manufacturer: "",
                             studyYear: "",
                             seriesYear: "",
+                            // Brain Cancer specific fields
+                            headaches: "",
+                            seizures: "",
+                            visionProblems: "",
+                            speechProblems: "",
+                            memoryIssues: "",
+                            motorWeakness: "",
+                            radiationExposure: "",
+                            tumorLocation: "",
+                            symptomDuration: "",
+                            kpsScore: "",
                             medicalImageFile: null,
                             reportFile: null,
                             imageBase64: "",
@@ -916,6 +963,107 @@ export default function NewAssessment() {
                                 </option>
                                 <option value="3">Grade 3 (High grade)</option>
                               </select>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {cancerType === "Brain Cancer" && (
+                        <div className="p-6 bg-violet-50 rounded-xl border border-violet-200">
+                          <h4 className="font-semibold text-violet-700 mb-4 flex items-center gap-2">
+                            <Brain className="w-5 h-5" />
+                            Brain Cancer Specific Parameters
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">
+                                Headaches
+                              </label>
+                              <select
+                                name="headaches"
+                                value={formData.headaches}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none"
+                              >
+                                <option value="">Select</option>
+                                <option value="0">No headaches</option>
+                                <option value="1">Frequent headaches</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">
+                                Seizures
+                              </label>
+                              <select
+                                name="seizures"
+                                value={formData.seizures}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none"
+                              >
+                                <option value="">Select</option>
+                                <option value="0">No seizures</option>
+                                <option value="1">History of seizures</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">
+                                Vision Problems
+                              </label>
+                              <select
+                                name="visionProblems"
+                                value={formData.visionProblems}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none"
+                              >
+                                <option value="">Select</option>
+                                <option value="0">No vision issues</option>
+                                <option value="1">Vision problems present</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">
+                                Memory Issues
+                              </label>
+                              <select
+                                name="memoryIssues"
+                                value={formData.memoryIssues}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none"
+                              >
+                                <option value="">Select</option>
+                                <option value="0">No memory issues</option>
+                                <option value="1">Memory problems present</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">
+                                Symptom Duration (months)
+                              </label>
+                              <input
+                                type="number"
+                                name="symptomDuration"
+                                value={formData.symptomDuration}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none"
+                                placeholder="6"
+                                min="1"
+                                max="60"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">
+                                Performance Status (0-100)
+                              </label>
+                              <input
+                                type="number"
+                                name="kpsScore"
+                                value={formData.kpsScore}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none"
+                                placeholder="90"
+                                min="40"
+                                max="100"
+                              />
                             </div>
                           </div>
                         </div>
