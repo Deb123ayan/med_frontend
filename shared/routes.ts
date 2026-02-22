@@ -52,9 +52,9 @@ export const api = {
         ecg_data: z.array(z.number()).optional(),
         report_text: z.string().optional(),
         image_metadata: z.object({
-            url: z.string(),
-            type: z.string(),
-            scanType: z.enum(['MRI', 'X-ray', 'CT', 'Biopsy'])
+          url: z.string(),
+          type: z.string(),
+          scanType: z.enum(['MRI', 'X-ray', 'CT', 'Biopsy'])
         }).optional(),
         medical_images: z.array(z.object({
           filename: z.string(),
@@ -79,11 +79,11 @@ export const api = {
       },
     },
     list: {
-        method: 'GET' as const,
-        path: '/api/predictions/',
-        responses: {
-            200: z.array(z.custom<typeof predictions.$inferSelect>()),
-        }
+      method: 'GET' as const,
+      path: '/api/predictions/',
+      responses: {
+        200: z.array(z.any()), // Should be PredictionResponse ideally
+      }
     },
     counterfactual: {
       method: 'POST' as const,

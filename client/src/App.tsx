@@ -10,6 +10,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import NewAssessment from "@/pages/NewAssessment";
 import PredictionReport from "@/pages/PredictionReport";
+import Reports from "@/pages/Reports";
 import Patients from "@/pages/Patients";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/" component={Dashboard} />
       <Route path="/assess" component={NewAssessment} />
+      <Route path="/reports" component={Reports} />
       <Route path="/predictions/:id" component={PredictionReport} />
       <Route path="/patients" component={Patients} />
       <Route component={NotFound} />

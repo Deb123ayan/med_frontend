@@ -1,0 +1,71 @@
+# ----------------------------------------------------------------------
+# Health-Insights Security & Routing Configuration
+# ----------------------------------------------------------------------
+
+# 1. PREVENT DIRECTORY BROWSING
+# This prevents users from seeing a list of files in your directories
+Options -Indexes
+
+# 2. BLOCK SENSITIVE FILES
+# Prevent access to hidden files (starting with a dot)
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevent access to environments and configs
+<FilesMatch "\.(env|example|json|config|yaml|yml|log)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevent access to databases and backups
+<FilesMatch "\.(sqlite|sqlite3|db|bak|sql)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevent access to source code and documentation
+<FilesMatch "\.(py|sh|md|txt)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# 3. ALLOW PUBLIC ASSETS
+# Re-enable access to specific public JSON files if needed (e.g. manifest.json)
+<Files "manifest.json">
+    Order allow,deny
+    Allow from all
+</Files>
+
+# 4. SINGLE PAGE APPLICATION (SPA) ROUTING
+# Ensures that frontend routes like /patients or /reports work on page refresh
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    
+    # Redirect to HTTPS if available (Uncomment if SSL is active)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Don't rewrite if the file or directory actually exists
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Redirect all other requests to index.html
+    # This allows the React Router to handle the URL
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+# 5. SECURITY HEADERS (Optional but Recommended)
+<IfModule mod_headers.c>
+    # Prevent the site from being embedded in frames (Clickjacking protection)
+    Header set X-Frame-Options "SAMEORIGIN"
+    
+    # Prevent browsers from guessing the content type
+    Header set X-Content-Type-Options "nosniff"
+    
+    # Enable XSS filtering in browsers
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>

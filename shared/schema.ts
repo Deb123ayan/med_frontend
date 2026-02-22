@@ -6,11 +6,13 @@ import { z } from "zod";
 
 export const patients = pgTable("patients", {
   id: serial("id").primaryKey(),
+  patient_id: text("patient_id"), // Hospital ID
   name: text("name").notNull(),
   age: integer("age").notNull(),
   gender: text("gender").notNull(), // 'Male', 'Female', 'Other'
   medicalHistory: jsonb("medical_history").$type<string[]>(), // Array of conditions
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const healthRecords = pgTable("health_records", {
@@ -21,7 +23,7 @@ export const healthRecords = pgTable("health_records", {
   // Time-series metadata or reference (e.g., ECG signal points)
   ecgData: jsonb("ecg_data").$type<number[]>(),
   // Image metadata (MRI, X-ray, Biopsy)
-  imageMetadata: jsonb("image_metadata").$type<{url: string, type: string, findings?: string, scanType?: "MRI" | "X-ray" | "CT"}>(),
+  imageMetadata: jsonb("image_metadata").$type<{ url: string, type: string, findings?: string, scanType?: "MRI" | "X-ray" | "CT" }>(),
   // Report Text (for NLP scanning)
   reportText: text("report_text"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -36,9 +38,9 @@ export const predictions = pgTable("predictions", {
   confidence: doublePrecision("confidence").notNull(), // 0-1
   uncertainty: doublePrecision("uncertainty").notNull(), // Monte Carlo Dropout / Ensemble variance
   // Explainability data
-  topFeatures: jsonb("top_features").notNull().$type<Array<{feature: string, value: number, importance: number, contribution: "positive" | "negative"}>>(),
-  biasAnalysis: jsonb("bias_analysis").$type<{genderBias: number, ageBias: number, fairnessWarning?: string}>(),
-  causalCounterfactuals: jsonb("causal_counterfactuals").$type<Array<{feature: string, originalValue: number, suggestedValue: number, impactOnRisk: number}>>(),
+  topFeatures: jsonb("top_features").notNull().$type<Array<{ feature: string, value: number, importance: number, contribution: "positive" | "negative" }>>(),
+  biasAnalysis: jsonb("bias_analysis").$type<{ genderBias: number, ageBias: number, fairnessWarning?: string }>(),
+  causalCounterfactuals: jsonb("causal_counterfactuals").$type<Array<{ feature: string, originalValue: number, suggestedValue: number, impactOnRisk: number }>>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

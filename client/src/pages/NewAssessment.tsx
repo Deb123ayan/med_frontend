@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Layout } from "@/components/Layout";
-import { useCreatePrediction } from "@/hooks/use-medical";
+import { useCreatePrediction, usePatient, usePredictions, useTouchPatient } from "@/hooks/use-medical";
 import { useLocation } from "wouter";
+import { useEffect } from "react";
+import { PatientTrendChart } from "@/components/PatientTrendChart";
+import { PredictionResponse } from "@shared/schema";
 import {
   Loader2,
   Microscope,
@@ -26,7 +29,6 @@ export default function NewAssessment() {
     | "Breast Cancer"
     | "Lung Cancer"
     | "Colorectal Cancer"
-    | "Prostate Cancer"
     | "Skin Cancer"
     | "Brain Cancer"
   >("Breast Cancer");
@@ -34,6 +36,36 @@ export default function NewAssessment() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const createPrediction = useCreatePrediction();
+  const touchPatient = useTouchPatient();
+
+  // Parse patientId from query string
+  const urlParams = new URLSearchParams(window.location.search);
+  const patientIdParam = urlParams.get('patientId');
+  const patientId = patientIdParam ? Number(patientIdParam) : null;
+
+  // Fetch patient data if patientId is present
+  const { data: patient } = usePatient(patientId || 0);
+  const { data: historyData } = usePredictions(patientId || undefined);
+  const history = (historyData as PredictionResponse[]) || [];
+
+  // Pre-fill form when patient data is loaded
+  useEffect(() => {
+    if (patient) {
+      setFormData(prev => ({
+        ...prev,
+        name: patient.name,
+        age: String(patient.age),
+        gender: patient.gender as any,
+      }));
+    }
+  }, [patient]);
+
+  // Touch patient record on load to move them to top of lists
+  useEffect(() => {
+    if (patientId) {
+      touchPatient.mutate(patientId);
+    }
+  }, [patientId]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -54,7 +86,6 @@ export default function NewAssessment() {
     smokingHistory: "",
     smokingYears: "",
     packYears: "",
-    psaLevel: "",
     lesionDiameter: "",
     asymmetry: "",
     borderIrregularity: "",
@@ -118,15 +149,6 @@ export default function NewAssessment() {
       description:
         "Detailed colorectal imaging with polyp detection and staging analysis",
     },
-    "Prostate Cancer": {
-      icon: "👨‍⚕️",
-      gradient: "from-purple-500 to-indigo-500",
-      bgGradient: "from-purple-50 to-indigo-50",
-      borderColor: "border-purple-200",
-      scanType: "MRI/Biopsy",
-      description:
-        "Precision prostate imaging with PSA correlation and Gleason scoring",
-    },
     "Skin Cancer": {
       icon: "🔬",
       gradient: "from-amber-500 to-orange-500",
@@ -157,8 +179,16 @@ export default function NewAssessment() {
       case 2:
         return !!(formData.medicalImageFile || formData.imageBase64);
       case 3:
-        // Make step 3 mandatory - require at least tumor size and family history
-        return !!(formData.tumorSize && formData.familyHistory !== "");
+        // Cancer-type-specific validation
+        if (cancerType === "Skin Cancer") {
+          return !!(formData.lesionDiameter && formData.familyHistory !== "");
+        } else if (cancerType === "Brain Cancer") {
+          return !!(formData.familyHistory !== "" && (formData.headaches !== "" || formData.seizures !== ""));
+        } else if (cancerType === "Colorectal Cancer") {
+          return !!(formData.familyHistory !== "");
+        } else {
+          return !!(formData.tumorSize && formData.familyHistory !== "");
+        }
       default:
         return false;
     }
@@ -211,11 +241,9 @@ export default function NewAssessment() {
                   ? "CT"
                   : cancerType === "Colorectal Cancer"
                     ? "CT"
-                    : cancerType === "Prostate Cancer"
+                    : cancerType === "Brain Cancer"
                       ? "MRI"
-                      : cancerType === "Brain Cancer"
-                        ? "MRI"
-                        : "Dermoscopy";
+                      : "Dermoscopy";
             bodyPart =
               cancerType === "Breast Cancer"
                 ? "breast"
@@ -223,11 +251,9 @@ export default function NewAssessment() {
                   ? "lung"
                   : cancerType === "Colorectal Cancer"
                     ? "colon"
-                    : cancerType === "Prostate Cancer"
-                      ? "prostate"
-                      : cancerType === "Brain Cancer"
-                        ? "brain"
-                        : "skin";
+                    : cancerType === "Brain Cancer"
+                      ? "brain"
+                      : "skin";
             analysisType = "cancer_detection";
           }
 
@@ -334,8 +360,6 @@ export default function NewAssessment() {
           clinicalData.study_year = Number(formData.studyYear) || 2024;
           clinicalData.series_year =
             Number(formData.seriesYear || formData.studyYear) || 2024;
-        } else if (cancerType === "Prostate Cancer") {
-          clinicalData.psa_level = Number(formData.psaLevel) || 2.5;
         } else if (cancerType === "Skin Cancer") {
           clinicalData.lesion_diameter = Number(formData.lesionDiameter) || 5;
           clinicalData.asymmetry = Number(formData.asymmetry) || 0;
@@ -362,7 +386,8 @@ export default function NewAssessment() {
       }
 
       const result = await createPrediction.mutateAsync({
-        patient_data: {
+        patient_id: patientId || undefined,
+        patient_data: patientId ? undefined : {
           name: formData.name,
           age: Number(formData.age),
           gender: formData.gender,
@@ -375,11 +400,10 @@ export default function NewAssessment() {
 
       toast({
         title: "Assessment Complete",
-        description: `Combined Risk Score: ${result.riskScore.toFixed(1)}% | ${
-          (result as any).imageAnalysisResults
-            ? "With Image Analysis"
-            : "Clinical Data Only"
-        }`,
+        description: `Combined Risk Score: ${result.riskScore.toFixed(1)}% | ${(result as any).imageAnalysisResults
+          ? "With Image Analysis"
+          : "Clinical Data Only"
+          }`,
       });
 
       setLocation(`/predictions/${result.id}`);
@@ -596,7 +620,7 @@ export default function NewAssessment() {
                             smokingHistory: "",
                             smokingYears: "",
                             packYears: "",
-                            psaLevel: "",
+
                             lesionDiameter: "",
                             asymmetry: "",
                             borderIrregularity: "",
@@ -647,6 +671,13 @@ export default function NewAssessment() {
             </div>
             {/* Main Content Area */}
             <div className="lg:col-span-9 order-2">
+              {/* Patient History Charts */}
+              {patientId && history.length > 0 && (
+                <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-700">
+                  <PatientTrendChart predictions={history} />
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
                 {/* Step 1: Patient Information */}
                 {currentStep === 1 && (
@@ -890,27 +921,29 @@ export default function NewAssessment() {
                       </div>
                     </div>
 
-                    <div className="p-8 space-y-6">
-                      {/* Basic Clinical Data */}
+                    <div className="p-4 md:p-8 space-y-6">
+                      {/* Common: Family History (shown for all) */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Tumor Size - only for Breast, Lung, Brain */}
+                        {(cancerType === "Breast Cancer" || cancerType === "Lung Cancer") && (
+                          <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">
+                              Tumor Size (mm) *
+                            </label>
+                            <input
+                              required
+                              type="number"
+                              name="tumorSize"
+                              value={formData.tumorSize}
+                              onChange={handleChange}
+                              className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-emerald-500 focus:outline-none transition-colors"
+                              placeholder="15"
+                            />
+                          </div>
+                        )}
                         <div>
                           <label className="block text-sm font-semibold text-slate-700 mb-2">
-                            Tumor Size (mm)
-                          </label>
-                          <input
-                            required
-                            type="number"
-                            name="tumorSize"
-                            value={formData.tumorSize}
-                            onChange={handleChange}
-                            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-emerald-500 focus:outline-none transition-colors"
-                            placeholder="15"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-semibold text-slate-700 mb-2">
-                            Family History
+                            Family History *
                           </label>
                           <select
                             name="familyHistory"
@@ -925,7 +958,7 @@ export default function NewAssessment() {
                         </div>
                       </div>
 
-                      {/* Cancer-Specific Parameters */}
+                      {/* ===== BREAST CANCER Parameters ===== */}
                       {cancerType === "Breast Cancer" && (
                         <div className="p-6 bg-pink-50 rounded-xl border border-pink-200">
                           <h4 className="font-semibold text-pink-700 mb-4 flex items-center gap-2">
@@ -934,40 +967,260 @@ export default function NewAssessment() {
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-2">
-                                Lymph Nodes Affected
-                              </label>
-                              <input
-                                type="number"
-                                name="lymphNodes"
-                                value={formData.lymphNodes}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 rounded-lg border border-pink-200 focus:border-pink-500 focus:outline-none"
-                                placeholder="0"
-                              />
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Lymph Nodes Affected</label>
+                              <input type="number" name="lymphNodes" value={formData.lymphNodes} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-pink-200 focus:border-pink-500 focus:outline-none" placeholder="0" />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-2">
-                                Tumor Grade
-                              </label>
-                              <select
-                                name="grade"
-                                value={formData.grade}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 rounded-lg border border-pink-200 focus:border-pink-500 focus:outline-none"
-                              >
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Tumor Grade</label>
+                              <select name="grade" value={formData.grade} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-pink-200 focus:border-pink-500 focus:outline-none">
                                 <option value="">Select grade</option>
-                                <option value="1">Grade 1 (Low grade)</option>
-                                <option value="2">
-                                  Grade 2 (Intermediate)
-                                </option>
-                                <option value="3">Grade 3 (High grade)</option>
+                                <option value="1">Grade 1 (Low)</option>
+                                <option value="2">Grade 2 (Intermediate)</option>
+                                <option value="3">Grade 3 (High)</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Stage</label>
+                              <select name="stage" value={formData.stage} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-pink-200 focus:border-pink-500 focus:outline-none">
+                                <option value="">Select stage</option>
+                                <option value="1">Stage I</option>
+                                <option value="2">Stage II</option>
+                                <option value="3">Stage III</option>
+                                <option value="4">Stage IV</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">ER Status</label>
+                              <select name="erStatus" value={formData.erStatus} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-pink-200 focus:border-pink-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="1">Positive</option>
+                                <option value="0">Negative</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">PR Status</label>
+                              <select name="prStatus" value={formData.prStatus} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-pink-200 focus:border-pink-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="1">Positive</option>
+                                <option value="0">Negative</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">HER2 Status</label>
+                              <select name="her2Status" value={formData.her2Status} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-pink-200 focus:border-pink-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="1">Positive</option>
+                                <option value="0">Negative</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Menopause Status</label>
+                              <select name="menopauseStatus" value={formData.menopauseStatus} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-pink-200 focus:border-pink-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="0">Pre-menopausal</option>
+                                <option value="1">Post-menopausal</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Genetic Markers</label>
+                              <select name="geneticMarkers" value={formData.geneticMarkers} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-pink-200 focus:border-pink-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="0">No BRCA mutation</option>
+                                <option value="1">BRCA mutation present</option>
                               </select>
                             </div>
                           </div>
                         </div>
                       )}
 
+                      {/* ===== LUNG CANCER Parameters ===== */}
+                      {cancerType === "Lung Cancer" && (
+                        <div className="p-6 bg-blue-50 rounded-xl border border-blue-200">
+                          <h4 className="font-semibold text-blue-700 mb-4 flex items-center gap-2">
+                            🫁 Lung Cancer Specific Parameters
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Smoking Years</label>
+                              <input type="number" name="smokingYears" value={formData.smokingYears} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-blue-200 focus:border-blue-500 focus:outline-none" placeholder="0" min="0" />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Pack Years</label>
+                              <input type="number" name="packYears" value={formData.packYears} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-blue-200 focus:border-blue-500 focus:outline-none" placeholder="0" min="0" />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">COPD History</label>
+                              <select name="copdHistory" value={formData.copdHistory} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-blue-200 focus:border-blue-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="0">No COPD</option>
+                                <option value="1">COPD present</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Asbestos Exposure</label>
+                              <select name="asbestosExposure" value={formData.asbestosExposure} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-blue-200 focus:border-blue-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="0">No exposure</option>
+                                <option value="1">Exposure present</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Nodule Size (cm)</label>
+                              <input type="number" name="noduleSize" value={formData.noduleSize} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-blue-200 focus:border-blue-500 focus:outline-none" placeholder="1.0" step="0.1" min="0" />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Chest Pain</label>
+                              <select name="chestPain" value={formData.chestPain} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-blue-200 focus:border-blue-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="0">No chest pain</option>
+                                <option value="1">Chest pain present</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Weight Loss</label>
+                              <select name="weightLoss" value={formData.weightLoss} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-blue-200 focus:border-blue-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="0">No unexplained weight loss</option>
+                                <option value="1">Unexplained weight loss</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Smoking History</label>
+                              <select name="smokingHistory" value={formData.smokingHistory} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-blue-200 focus:border-blue-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="0">Never smoked</option>
+                                <option value="1">Former/current smoker</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ===== SKIN CANCER Parameters ===== */}
+                      {cancerType === "Skin Cancer" && (
+                        <div className="p-6 bg-amber-50 rounded-xl border border-amber-200">
+                          <h4 className="font-semibold text-amber-700 mb-4 flex items-center gap-2">
+                            🔬 Skin Cancer Specific Parameters (ABCDE Criteria)
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Lesion Diameter (mm) *</label>
+                              <input type="number" name="lesionDiameter" value={formData.lesionDiameter} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:border-amber-500 focus:outline-none" placeholder="5" min="1" max="50" />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Asymmetry (A)</label>
+                              <select name="asymmetry" value={formData.asymmetry} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:border-amber-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="0">Symmetric</option>
+                                <option value="1">Asymmetric</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Border Irregularity (B)</label>
+                              <select name="borderIrregularity" value={formData.borderIrregularity} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:border-amber-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="0">Regular border</option>
+                                <option value="1">Irregular border</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Color Variation (C)</label>
+                              <select name="colorVariation" value={formData.colorVariation} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:border-amber-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="0">Uniform color</option>
+                                <option value="1">Multiple colors</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Sun Exposure (E)</label>
+                              <select name="sunExposure" value={formData.sunExposure} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:border-amber-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="0">Low exposure</option>
+                                <option value="1">Moderate exposure</option>
+                                <option value="2">High exposure</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Skin Type (Fitzpatrick)</label>
+                              <select name="skinType" value={formData.skinType} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:border-amber-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="1">Type I - Very fair</option>
+                                <option value="2">Type II - Fair</option>
+                                <option value="3">Type III - Medium</option>
+                                <option value="4">Type IV - Olive</option>
+                                <option value="5">Type V - Brown</option>
+                                <option value="6">Type VI - Dark brown/black</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ===== COLORECTAL CANCER Parameters ===== */}
+                      {cancerType === "Colorectal Cancer" && (
+                        <div className="p-6 bg-emerald-50 rounded-xl border border-emerald-200">
+                          <h4 className="font-semibold text-emerald-700 mb-4 flex items-center gap-2">
+                            🩺 Colorectal Cancer Specific Parameters
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Smoking History</label>
+                              <select name="smokingHistory" value={formData.smokingHistory} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-emerald-200 focus:border-emerald-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="0">Never smoked</option>
+                                <option value="1">Former/current smoker</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Imaging Manufacturer</label>
+                              <select name="manufacturer" value={formData.manufacturer} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-emerald-200 focus:border-emerald-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="SIEMENS">Siemens</option>
+                                <option value="GE MEDICAL SYSTEMS">GE Medical Systems</option>
+                                <option value="PHILIPS">Philips</option>
+                                <option value="TOSHIBA">Toshiba</option>
+                                <option value="OTHER">Other</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Study Year</label>
+                              <input type="number" name="studyYear" value={formData.studyYear} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-emerald-200 focus:border-emerald-500 focus:outline-none" placeholder="2024" min="2000" max="2030" />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Series Year</label>
+                              <input type="number" name="seriesYear" value={formData.seriesYear} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-emerald-200 focus:border-emerald-500 focus:outline-none" placeholder="2024" min="2000" max="2030" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ===== BRAIN CANCER Parameters ===== */}
                       {cancerType === "Brain Cancer" && (
                         <div className="p-6 bg-violet-50 rounded-xl border border-violet-200">
                           <h4 className="font-semibold text-violet-700 mb-4 flex items-center gap-2">
@@ -976,94 +1229,90 @@ export default function NewAssessment() {
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-2">
-                                Headaches
-                              </label>
-                              <select
-                                name="headaches"
-                                value={formData.headaches}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none"
-                              >
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Headaches</label>
+                              <select name="headaches" value={formData.headaches} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none">
                                 <option value="">Select</option>
                                 <option value="0">No headaches</option>
                                 <option value="1">Frequent headaches</option>
                               </select>
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-2">
-                                Seizures
-                              </label>
-                              <select
-                                name="seizures"
-                                value={formData.seizures}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none"
-                              >
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Seizures</label>
+                              <select name="seizures" value={formData.seizures} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none">
                                 <option value="">Select</option>
                                 <option value="0">No seizures</option>
                                 <option value="1">History of seizures</option>
                               </select>
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-2">
-                                Vision Problems
-                              </label>
-                              <select
-                                name="visionProblems"
-                                value={formData.visionProblems}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none"
-                              >
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Vision Problems</label>
+                              <select name="visionProblems" value={formData.visionProblems} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none">
                                 <option value="">Select</option>
                                 <option value="0">No vision issues</option>
                                 <option value="1">Vision problems present</option>
                               </select>
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-2">
-                                Memory Issues
-                              </label>
-                              <select
-                                name="memoryIssues"
-                                value={formData.memoryIssues}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none"
-                              >
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Speech Problems</label>
+                              <select name="speechProblems" value={formData.speechProblems} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="0">No speech issues</option>
+                                <option value="1">Speech problems present</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Memory Issues</label>
+                              <select name="memoryIssues" value={formData.memoryIssues} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none">
                                 <option value="">Select</option>
                                 <option value="0">No memory issues</option>
                                 <option value="1">Memory problems present</option>
                               </select>
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-2">
-                                Symptom Duration (months)
-                              </label>
-                              <input
-                                type="number"
-                                name="symptomDuration"
-                                value={formData.symptomDuration}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none"
-                                placeholder="6"
-                                min="1"
-                                max="60"
-                              />
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Motor Weakness</label>
+                              <select name="motorWeakness" value={formData.motorWeakness} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="0">No weakness</option>
+                                <option value="1">Motor weakness present</option>
+                              </select>
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-2">
-                                Performance Status (0-100)
-                              </label>
-                              <input
-                                type="number"
-                                name="kpsScore"
-                                value={formData.kpsScore}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none"
-                                placeholder="90"
-                                min="40"
-                                max="100"
-                              />
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Radiation Exposure</label>
+                              <select name="radiationExposure" value={formData.radiationExposure} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="0">No exposure</option>
+                                <option value="1">Prior radiation exposure</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Symptom Duration (months)</label>
+                              <input type="number" name="symptomDuration" value={formData.symptomDuration} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none" placeholder="6" min="1" max="60" />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Performance Status (KPS 0-100)</label>
+                              <input type="number" name="kpsScore" value={formData.kpsScore} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none" placeholder="90" min="40" max="100" />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-2">Tumor Location</label>
+                              <select name="tumorLocation" value={formData.tumorLocation} onChange={handleChange}
+                                className="w-full px-3 py-2 rounded-lg border border-violet-200 focus:border-violet-500 focus:outline-none">
+                                <option value="">Select</option>
+                                <option value="1">Frontal lobe</option>
+                                <option value="2">Temporal lobe</option>
+                                <option value="3">Parietal lobe</option>
+                                <option value="4">Occipital lobe</option>
+                                <option value="5">Cerebellum</option>
+                                <option value="6">Brain stem</option>
+                              </select>
                             </div>
                           </div>
                         </div>
@@ -1075,16 +1324,14 @@ export default function NewAssessment() {
                             <>
                               <Check className="w-5 h-5 text-green-500" />
                               <span className="text-sm font-medium text-green-700">
-                                Clinical parameters complete - ready for AI
-                                analysis
+                                Clinical parameters complete - ready for AI analysis
                               </span>
                             </>
                           ) : (
                             <>
                               <AlertCircle className="w-5 h-5 text-amber-500" />
                               <span className="text-sm font-medium text-amber-700">
-                                Please fill in tumor size and family history to
-                                continue
+                                Please fill in the required fields to continue
                               </span>
                             </>
                           )}

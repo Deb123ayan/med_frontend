@@ -10,7 +10,7 @@ export default function Patients() {
   const [search, setSearch] = useState("");
   const isMobile = useIsMobile();
 
-  const filteredPatients = patients?.filter(p => 
+  const filteredPatients = patients?.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -19,12 +19,12 @@ export default function Patients() {
       <header className="flex flex-col gap-3 md:gap-4 mb-4 md:mb-8">
         <div className="flex items-center justify-between">
           <div>
-             <h1 className="text-xl md:text-3xl font-bold text-slate-900">
-               {isMobile ? "Patients" : "Patient Directory"}
-             </h1>
-             <p className="text-slate-500 mt-1 text-sm md:text-base">
-               {isMobile ? "Manage patient records" : "Manage patient records and view history."}
-             </p>
+            <h1 className="text-xl md:text-3xl font-bold text-slate-900">
+              {isMobile ? "Patients" : "Patient Directory"}
+            </h1>
+            <p className="text-slate-500 mt-1 text-sm md:text-base">
+              {isMobile ? "Manage patient records" : "Manage patient records and view history."}
+            </p>
           </div>
           {!isMobile && (
             <Link href="/assess">
@@ -35,7 +35,7 @@ export default function Patients() {
             </Link>
           )}
         </div>
-        
+
         {/* Mobile Add Button */}
         {isMobile && (
           <Link href="/assess">
@@ -50,9 +50,9 @@ export default function Patients() {
       {/* Search Bar */}
       <div className="relative mb-4 md:mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 md:w-5 md:h-5" />
-        <input 
-          type="text" 
-          placeholder={isMobile ? "Search patients..." : "Search patients by name..."} 
+        <input
+          type="text"
+          placeholder={isMobile ? "Search patients..." : "Search patients by name..."}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-9 md:pl-10 pr-4 py-3 rounded-lg md:rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm touch-target"
@@ -74,27 +74,29 @@ export default function Patients() {
                 </div>
                 <span className="text-xs font-mono text-slate-400">#{patient.id}</span>
               </div>
-              
+
               <h3 className="text-base md:text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                 {patient.name}
               </h3>
-              
+
               <div className="mt-2 space-y-1 text-sm text-slate-500">
                 <p>Age: {patient.age} • {patient.gender}</p>
-                <p className="text-xs md:text-sm">Registered: {new Date(patient.createdAt!).toLocaleDateString()}</p>
+                <p className="text-xs md:text-sm">
+                  Registered: {patient.createdAt ? new Date(patient.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
+                </p>
               </div>
 
               <div className="mt-4 md:mt-6 pt-3 md:pt-4 border-t border-slate-100">
-                <Link href={`/assess`} className="block w-full text-center py-2.5 md:py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-colors touch-target">
+                <Link href={`/assess?patientId=${patient.id}`} className="block w-full text-center py-2.5 md:py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-medium transition-colors touch-target">
                   New Assessment
                 </Link>
               </div>
             </div>
           ))}
           {filteredPatients?.length === 0 && (
-             <div className="col-span-full text-center py-8 md:py-12 bg-slate-50 rounded-lg md:rounded-2xl border border-dashed border-slate-200 text-slate-400 text-sm md:text-base">
-                {search ? `No patients found matching "${search}"` : "No patients found"}
-             </div>
+            <div className="col-span-full text-center py-8 md:py-12 bg-slate-50 rounded-lg md:rounded-2xl border border-dashed border-slate-200 text-slate-400 text-sm md:text-base">
+              {search ? `No patients found matching "${search}"` : "No patients found"}
+            </div>
           )}
         </div>
       )}

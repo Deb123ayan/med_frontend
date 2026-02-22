@@ -17,7 +17,7 @@ export function usePatients() {
   return useQuery({
     queryKey: [api.patients.list.path],
     queryFn: async () => {
-      const res = await fetch(api.patients.list.path, { 
+      const res = await fetch(api.patients.list.path, {
         headers: getAuthHeaders()
       });
       if (!res.ok) throw new Error("Failed to fetch patients");
@@ -31,7 +31,7 @@ export function usePatient(id: number) {
     queryKey: [api.patients.get.path, id],
     queryFn: async () => {
       const url = buildUrl(api.patients.get.path, { id });
-      const res = await fetch(url, { 
+      const res = await fetch(url, {
         headers: getAuthHeaders()
       });
       if (res.status === 404) return null;
@@ -58,15 +58,35 @@ export function useCreatePatient() {
   });
 }
 
+export function useTouchPatient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/patients/${id}/touch/`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to touch patient");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.patients.list.path] });
+    }
+  });
+}
+
 // ============================================
 // PREDICTION HOOKS
 // ============================================
 
-export function usePredictions() {
+export function usePredictions(patientId?: number) {
   return useQuery({
-    queryKey: [api.predictions.list.path],
+    queryKey: [api.predictions.list.path, patientId],
     queryFn: async () => {
-      const res = await fetch(api.predictions.list.path, { 
+      const url = patientId
+        ? `${api.predictions.list.path}?patientId=${patientId}`
+        : api.predictions.list.path;
+      const res = await fetch(url, {
         headers: getAuthHeaders()
       });
       if (!res.ok) throw new Error("Failed to fetch predictions");
@@ -80,7 +100,7 @@ export function usePrediction(id: number) {
     queryKey: [api.predictions.get.path, id],
     queryFn: async () => {
       const url = buildUrl(api.predictions.get.path, { id });
-      const res = await fetch(url, { 
+      const res = await fetch(url, {
         headers: getAuthHeaders()
       });
       if (res.status === 404) return null;
@@ -100,11 +120,11 @@ export function useCreatePrediction() {
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
       });
-      
+
       if (!res.ok) {
         if (res.status === 400) {
-           const error = api.predictions.predict.responses[400].parse(await res.json());
-           throw new Error(error.message);
+          const error = api.predictions.predict.responses[400].parse(await res.json());
+          throw new Error(error.message);
         }
         throw new Error("Failed to generate prediction");
       }

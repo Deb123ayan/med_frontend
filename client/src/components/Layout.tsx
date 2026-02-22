@@ -1,24 +1,24 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, FilePlus2, Users, Activity, BrainCircuit, Menu, X, LogOut } from "lucide-react";
+import { LayoutDashboard, FilePlus2, Users, Activity, BrainCircuit, Menu, X, LogOut, FileText } from "lucide-react";
 import { clsx } from "clsx";
 import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
-  
+
   // Mock doctor data for now (no auth)
   const mockDoctor = {
     first_name: "Demo",
@@ -31,6 +31,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/patients", label: "Patients", icon: Users },
+    { href: "/reports", label: "Reports", icon: FileText },
     { href: "/assess", label: "New Assessment", icon: FilePlus2 },
   ];
 
@@ -95,20 +96,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 Arogya<span className="text-blue-600">-AI</span>
               </span>
             </div>
-            
+
             <div className="p-3 space-y-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location === item.href;
                 return (
-                  <Link 
-                    key={item.href} 
-                    href={item.href} 
+                  <Link
+                    key={item.href}
+                    href={item.href}
                     onClick={closeMobileMenu}
                     className={clsx(
                       "flex items-center gap-3 px-4 py-3.5 rounded-lg text-sm font-medium transition-all duration-200 group",
-                      isActive 
-                        ? "bg-blue-50 text-blue-700 shadow-sm shadow-blue-100 ring-1 ring-blue-200" 
+                      isActive
+                        ? "bg-blue-50 text-blue-700 shadow-sm shadow-blue-100 ring-1 ring-blue-200"
                         : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
                     )}
                   >
@@ -155,8 +156,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             return (
               <Link key={item.href} href={item.href} className={clsx(
                 "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 group",
-                isActive 
-                  ? "bg-blue-50 text-blue-700 shadow-sm shadow-blue-100 ring-1 ring-blue-200" 
+                isActive
+                  ? "bg-blue-50 text-blue-700 shadow-sm shadow-blue-100 ring-1 ring-blue-200"
                   : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
               )}>
                 <Icon className={clsx(
